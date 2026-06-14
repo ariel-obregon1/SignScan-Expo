@@ -1,0 +1,35 @@
+# Entornos virtuales
+venv/
+venv_*/
+env/
+.venv/
+
+# Datasets de terceros (LSA64 tiene su propia licencia — no redistribuir)
+lstm/dataset_lstm/
+lstm/lsa64_download/
+*.mp4
+
+# Modelo de detección de manos de MediaPipe (descargar aparte, ver README)
+hand_landmarker.task
+
+# Backups y artefactos intermedios
+backup_modelo_1clase/
+model.weights.h5
+modelo_lstm_v2.keras
+*.txt.bak
+lsa64_paper.txt
+todos_los_codigos.txt
+
+# Audio temporal (TTS)
+voz.mp3
+*.mp3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+# SignScan LSTM — señas dinámicas (Python 3.12)
+tensorflow==2.21.0
+keras==3.14.1
+mediapipe==0.10.35
+opencv-python==4.13.0.92
+numpy
+scikit-learn
+
+# Herramientas para preprocesar el dataset LSA64 (opcional)
+gdown
