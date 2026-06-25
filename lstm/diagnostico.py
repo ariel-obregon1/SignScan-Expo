@@ -1,7 +1,7 @@
 import numpy as np
 from keras.models import load_model
 
-model = load_model("modelo_lstm_v2.keras")
+model = load_model("modelo_lstm.keras")
 labels = np.load("clases.npy", allow_pickle=True)
 X_mean = np.load("X_mean.npy")
 X_std = np.load("X_std.npy")
