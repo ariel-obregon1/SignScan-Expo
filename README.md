@@ -1,15 +1,39 @@
-# SignScan — Traductor de Lenguaje de Señas
+# SignScan — Plataforma Inteligente de Traducción de Lenguaje de Señas
 
-Sistema de reconocimiento de lenguaje de señas en tiempo real usando visión por
-computadora ([MediaPipe](https://developers.google.com/mediapipe)) y machine learning.
-Detecta las manos por webcam, extrae los *landmarks* y los traduce a texto.
+Sistema de reconocimiento de lenguaje de señas en tiempo real utilizando visión por computadora e inteligencia artificial. SignScan detecta las manos mediante webcam, extrae los *landmarks* utilizando MediaPipe y traduce las señas a texto mediante modelos de Machine Learning y Deep Learning.
 
-El proyecto tiene **dos módulos**:
+El proyecto integra reconocimiento de señas estáticas y dinámicas, además de una aplicación completa desarrollada en Flet para facilitar la comunicación, el aprendizaje y la accesibilidad para personas sordas y oyentes.
 
-| Módulo | Carpeta | Señas | Modelo |
-|--------|---------|-------|--------|
-| **Estático** | [`static/`](static/) | Letras / señas sin movimiento | RandomForest |
-| **Dinámico** | [`lstm/`](lstm/) | Palabras con movimiento | BiLSTM (secuencias de 45 frames) |
+---
+
+## Objetivo
+
+SignScan busca facilitar la comunicación entre personas sordas y oyentes mediante la traducción automática de lenguaje de señas, combinando tecnologías de visión por computadora, aprendizaje automático e interfaces accesibles.
+
+---
+
+## Características principales
+
+- Reconocimiento de señas estáticas en tiempo real.
+- Reconocimiento de señas dinámicas mediante secuencias de movimiento.
+- Traducción automática de señas a texto.
+- Detección de manos con MediaPipe.
+- Interfaz gráfica desarrollada con Flet.
+- Sistema de aprendizaje de lenguaje de señas.
+- Historial de traducciones.
+- Gestión de perfiles de usuario.
+- Base de datos local SQLite.
+- Arquitectura modular para futuras ampliaciones.
+
+---
+
+## Arquitectura general
+
+| Módulo | Función | Tecnología principal |
+|---------|----------|----------|
+| **static/** | Reconocimiento de señas estáticas | Random Forest |
+| **lstm/** | Reconocimiento de señas dinámicas | BiLSTM |
+| **Aplicación principal** | Interfaz, aprendizaje, historial y traducción | Flet + SQLite |
 
 ---
 
@@ -17,14 +41,15 @@ El proyecto tiene **dos módulos**:
 
 - Python 3.12
 - Webcam
+- Windows 10/11 (recomendado)
 
-Instalación (recomendado un entorno virtual por módulo):
+Instalación:
 
 ```bash
 # Módulo dinámico (LSTM)
 cd lstm
 python -m venv venv
-venv\Scripts\activate        # Windows
+venv\Scripts\activate
 pip install -r requirements.txt
 
 # Módulo estático
@@ -32,70 +57,164 @@ cd static
 pip install -r requirements.txt
 ```
 
-### Modelo de detección de manos (solo módulo LSTM)
+---
 
-El módulo dinámico usa el *Hand Landmarker* de MediaPipe (Tasks API). Descargalo una vez:
+## Modelo de detección de manos (solo módulo LSTM)
+
+El módulo dinámico utiliza el Hand Landmarker de MediaPipe (Tasks API).
+
+Descargar una única vez:
 
 ```bash
 python -c "import urllib.request; urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', 'hand_landmarker.task')"
 ```
 
-(El archivo `hand_landmarker.task` no se incluye en el repo; se descarga aparte.)
+El archivo `hand_landmarker.task` no se incluye en el repositorio.
 
 ---
 
-## Módulo estático (`static/`)
+# Módulo Estático (`static/`)
+
+Reconoce letras y señas que no requieren movimiento.
 
 | Script | Función |
-|--------|---------|
-| `capturar_estaticas.py` | Captura muestras de una seña por webcam |
-| `limpiar_datos.py` | Limpia el dataset (filas incompletas) |
-| `train_estaticas.py` | Entrena el RandomForest |
-| `predict_estaticas.py` | Reconocimiento en vivo (ESC salir · `c` limpiar · `v` voz · ⌫ borrar) |
-| `main.py` | Interfaz gráfica (Flet) |
+|----------|----------|
+| `capturar_estaticas.py` | Captura muestras por webcam |
+| `limpiar_datos.py` | Limpieza del dataset |
+| `train_estaticas.py` | Entrenamiento del modelo Random Forest |
+| `predict_estaticas.py` | Reconocimiento en tiempo real |
+| `main.py` | Interfaz gráfica |
 
-Flujo: `capturar_estaticas.py` → `limpiar_datos.py` → `train_estaticas.py` → `predict_estaticas.py`
+### Flujo de trabajo
+
+```text
+capturar_estaticas.py
+        ↓
+limpiar_datos.py
+        ↓
+train_estaticas.py
+        ↓
+predict_estaticas.py
+```
 
 ---
 
-## Módulo dinámico (`lstm/`)
+# Módulo Dinámico (`lstm/`)
+
+Reconoce palabras y señas que requieren movimiento.
 
 | Script | Función |
-|--------|---------|
-| `capturar_lstm.py` | Captura secuencias de 45 frames de una seña |
-| `train_lstm.py` | Entrena la red BiLSTM |
-| `predict_lstm.py` | Reconocimiento en vivo (ESC salir · `f` pantalla completa · `c` limpiar · ⌫ borrar) |
-| `hand_detector.py` | Wrapper de detección de manos (MediaPipe Tasks API) |
-| `preprocesar_lsa64.py` | Convierte videos del dataset LSA64 al formato del pipeline |
-| `verificar_multiclase.py` | Verifica que el modelo distingue las clases |
+|----------|----------|
+| `capturar_lstm.py` | Captura secuencias de 45 frames |
+| `train_lstm.py` | Entrenamiento de la red BiLSTM |
+| `predict_lstm.py` | Reconocimiento en tiempo real |
+| `hand_detector.py` | Detección de manos con MediaPipe |
+| `preprocesar_lsa64.py` | Conversión del dataset LSA64 |
+| `verificar_multiclase.py` | Verificación de clasificación |
 
-**Formato de los datos:** cada muestra es una secuencia `(45, 504)`:
-`504 = 252 features actuales + 252 deltas`, donde `252 = mano_izq(126) + mano_der(126)`,
-y cada mano son 21 landmarks × `[abs_x, abs_y, abs_z, rel_x, rel_y, rel_z]`.
+### Formato de los datos
 
-### Modelo incluido
+Cada muestra corresponde a una secuencia:
 
-El repo trae un modelo de **demostración** (`modelo_lstm.keras`) entrenado con **3 señas**
-del dataset LSA64 (*Green*, *Bright*, *Food*), con ~95% de accuracy en validación.
-Para tu propio vocabulario, capturá señas con `capturar_lstm.py` y reentrená con `train_lstm.py`.
+```text
+(45, 504)
+```
+
+donde:
+
+```text
+504 = 252 características actuales + 252 deltas
+```
+
+Cada mano utiliza:
+
+```text
+21 landmarks ×
+(abs_x, abs_y, abs_z,
+ rel_x, rel_y, rel_z)
+```
+
+---
+
+## Modelo incluido
+
+El repositorio incluye un modelo de demostración entrenado sobre el dataset LSA64.
+
+Este modelo se proporciona únicamente como ejemplo de funcionamiento.
+
+Para entrenar vocabulario personalizado se deben capturar nuevas muestras utilizando:
+
+```text
+capturar_lstm.py
+```
+
+y posteriormente reentrenar mediante:
+
+```text
+train_lstm.py
+```
 
 ---
 
 ## Dataset LSA64 (opcional)
 
-El módulo dinámico puede entrenarse con [LSA64](https://midusi.github.io/lsa64/), un dataset
-público de Lengua de Señas Argentina (64 señas, 10 personas, 3200 videos).
+El módulo dinámico puede entrenarse utilizando el dataset público LSA64.
 
-> **Nota:** Los videos de LSA64 **no** se incluyen en este repo (tienen su propia licencia).
-> Descargá el dataset desde su [sitio oficial](https://midusi.github.io/lsa64/) y procesalo con
-> `preprocesar_lsa64.py`.
+Características:
 
-**Cita:** Ronchetti, F., Quiroga, F., Estrebou, C., Lanzarini, L., Rosete, A.
-*LSA64: An Argentinian Sign Language Dataset* (2016). [arXiv:2310.17429](https://arxiv.org/abs/2310.17429)
+- 64 señas.
+- 10 participantes.
+- Más de 3200 videos.
+
+Los videos originales no se incluyen en este repositorio.
+
+---
+
+## Tecnologías utilizadas
+
+- Python 3.12
+- Flet
+- OpenCV
+- MediaPipe
+- TensorFlow
+- Keras
+- Scikit-Learn
+- NumPy
+- Pandas
+- SQLite
+
+---
+
+## Estado actual del proyecto
+
+Actualmente SignScan cuenta con:
+
+- Reconocimiento de señas estáticas funcional.
+- Reconocimiento de señas dinámicas funcional.
+- Captura y entrenamiento de nuevas señas.
+- Traducción en tiempo real mediante webcam.
+- Interfaz gráfica moderna.
+- Sistema de aprendizaje integrado.
+- Historial de traducciones.
+- Base de datos local.
+
+El proyecto continúa en desarrollo con el objetivo de ampliar el vocabulario reconocido y mejorar la precisión del sistema.
+
+---
+
+## Futuras mejoras
+
+- Ampliación del vocabulario.
+- Mayor cantidad de señas dinámicas.
+- Traducción bidireccional.
+- Compatibilidad móvil.
+- Soporte para más variantes de lengua de señas.
+- Mejoras de precisión y rendimiento.
 
 ---
 
 ## Licencia
 
-Código bajo licencia MIT. El dataset LSA64 y el modelo de MediaPipe mantienen sus
-respectivas licencias.
+Código bajo licencia MIT.
+
+El dataset LSA64 y los modelos de MediaPipe mantienen sus respectivas licencias.
