@@ -39,15 +39,15 @@ def pantalla_crear_cuenta(page):
     # =========================
 
     ESTILO_INPUT = {
-        "width": 420,
-        "height": 60,
-        "border_radius": 14,
-        "filled": True,
-        "bgcolor": "#FFFFFF",
-        "border_color": "#CBD5E1",
-        "focused_border_color": TURQUESA,
-        "color": "#0F172A",
-        "text_size": 15,
+    "width": 420,
+    "height": 52,
+    "border_radius": 14,
+    "filled": True,
+    "bgcolor": "#FFFFFF",
+    "border_color": "#CBD5E1",
+    "focused_border_color": TURQUESA,
+    "color": "#0F172A",
+    "text_size": 15,
     }
 
     nombre = ft.TextField(
@@ -106,7 +106,7 @@ def pantalla_crear_cuenta(page):
                     ),
                 ),
 
-                ft.Container(height=25),
+                ft.Container(height=15),
 
                 ft.Text(
                     "SignScan",
@@ -202,7 +202,7 @@ def pantalla_crear_cuenta(page):
 
             ft.Text(
                 "Crear cuenta",
-                size=38,
+                size=32,
                 weight="bold",
                 color="#0F172A",
             ),
@@ -215,11 +215,11 @@ def pantalla_crear_cuenta(page):
                 color=GRIS_TEXTO,
             ),
 
-            ft.Container(height=25),
+            ft.Container(height=10),
 
             redes,
 
-            ft.Container(height=25),
+            ft.Container(height=10),
 
             ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -249,23 +249,23 @@ def pantalla_crear_cuenta(page):
                 ],
             ),
 
-            ft.Container(height=25),
+            ft.Container(height=10),
 
             nombre,
 
-            ft.Container(height=12),
+            ft.Container(height=8),
 
             correo,
 
-            ft.Container(height=12),
+            ft.Container(height=8),
 
             password,
 
-            ft.Container(height=12),
+            ft.Container(height=8),
 
             confirmar,
 
-            ft.Container(height=25),
+            ft.Container(height=10),
 
             ft.ElevatedButton(
                 "Crear cuenta",
@@ -275,7 +275,7 @@ def pantalla_crear_cuenta(page):
                 color=AZUL_OSCURO,
             ),
 
-            ft.Container(height=20),
+            ft.Container(height=19),
 
             ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -298,27 +298,29 @@ def pantalla_crear_cuenta(page):
     # =========================
 
     panel_derecho = ft.Container(
-        expand=6,
-        bgcolor="#F1F5F9",
-        content=ft.Row(
-            alignment=ft.MainAxisAlignment.CENTER,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=[
-                ft.Container(
-                    width=560,
-                    padding=40,
-                    bgcolor=BLANCO,
-                    border_radius=25,
-                    shadow=ft.BoxShadow(
-                        blur_radius=30,
-                        spread_radius=1,
-                        color="#22000000",
-                    ),
-                    content=formulario,
-                )
-            ],
-        ),
-    )
+    expand=6,
+    bgcolor="#F1F5F9",
+    content=ft.Column(
+        expand=True,
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        controls=[
+            ft.Container(
+                width=520,
+                padding=30,
+                bgcolor=BLANCO,
+                border_radius=25,
+                shadow=ft.BoxShadow(
+                    blur_radius=25,
+                    spread_radius=1,
+                    color="#22000000",
+                ),
+                content=formulario,
+            )
+        ],
+    ),
+)
+
 
     # =========================
     # VISTA

@@ -8,8 +8,7 @@ def main(page: ft.Page):
     page.padding = 0
     page.spacing = 0
 
-    page.window.width = 1400
-    page.window.height = 800
+    page.window.full_screen = True
     page.assets_dir = "assets"
     pantalla_bienvenida(page)
 
