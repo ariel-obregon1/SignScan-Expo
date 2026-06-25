@@ -128,8 +128,9 @@ model.compile(
 
 early_stop = EarlyStopping(
     monitor="val_loss",
-    patience=10,
-    restore_best_weights=True
+    patience=8,
+    restore_best_weights=True,
+    verbose=1
 )
 
 # ============================================
@@ -139,7 +140,7 @@ early_stop = EarlyStopping(
 history = model.fit(
     X_train,
     y_train,
-    epochs=100,
+    epochs=50,
     batch_size=16,
     validation_data=(X_test, y_test),
     callbacks=[early_stop]
