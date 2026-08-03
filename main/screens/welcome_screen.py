@@ -1,5 +1,3 @@
-# screens/bienvenida.py
-
 import flet as ft
 
 # =========================
@@ -10,7 +8,6 @@ AZUL_OSCURO = "#001845"
 AZUL_PRINCIPAL = "#002060"
 TURQUESA = "#40E0D0"
 
-GRIS_FONDO = "#EEF2F7"
 GRIS_APP = "#E5E7EB"
 
 GRIS_TEXTO = "#6B7A99"
@@ -32,11 +29,17 @@ def _feature_card(icono, texto):
                 width=90,
                 height=90,
                 bgcolor="#244080",
-                border=ft.border.all(
-                    1,
-                    "#4DFFFFFF",
+
+                # Si Border también da error, elimina estas 6 líneas
+                border=ft.Border(
+                    left=ft.BorderSide(1, "#4DFFFFFF"),
+                    top=ft.BorderSide(1, "#4DFFFFFF"),
+                    right=ft.BorderSide(1, "#4DFFFFFF"),
+                    bottom=ft.BorderSide(1, "#4DFFFFFF"),
                 ),
+
                 border_radius=20,
+
                 content=ft.Column(
                     expand=True,
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -50,10 +53,11 @@ def _feature_card(icono, texto):
                     ],
                 ),
             ),
+
             ft.Text(
                 texto,
                 color=BLANCO,
-                weight="bold",
+                weight=ft.FontWeight.BOLD,
                 size=12,
             ),
         ],
@@ -65,15 +69,14 @@ def _feature_card(icono, texto):
 # =========================
 
 def abrir_crear_cuenta(page):
-    from screens.crear_cuenta import pantalla_crear_cuenta
-    pantalla_crear_cuenta(page)
+    page.go("/crear-cuenta")
 
 
 # =========================
 # PANTALLA
 # =========================
 
-def pantalla_bienvenida(page):
+def screen_welcome(page):
 
     page.clean()
 
@@ -81,15 +84,18 @@ def pantalla_bienvenida(page):
         expand=4,
         bgcolor=AZUL_PRINCIPAL,
         padding=40,
+
         content=ft.Column(
             expand=True,
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+
             controls=[
                 ft.Container(
                     bgcolor=BLANCO,
                     border_radius=30,
                     padding=20,
+
                     content=ft.Image(
                         src="logo.png",
                         width=180,
@@ -101,7 +107,7 @@ def pantalla_bienvenida(page):
                 ft.Text(
                     "SignScan",
                     size=42,
-                    weight="bold",
+                    weight=ft.FontWeight.BOLD,
                     color=BLANCO,
                 ),
 
@@ -130,15 +136,16 @@ def pantalla_bienvenida(page):
         expand=6,
         bgcolor=BLANCO,
         padding=60,
+
         content=ft.Column(
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=[
 
+            controls=[
                 ft.Text(
                     "Comunicación\naccesible para todos",
                     size=40,
-                    weight="bold",
+                    weight=ft.FontWeight.BOLD,
                     color=AZUL_OSCURO,
                     text_align=ft.TextAlign.CENTER,
                 ),
@@ -170,6 +177,7 @@ def pantalla_bienvenida(page):
                     "Iniciar sesión",
                     width=350,
                     height=55,
+                    on_click=lambda e: page.go("/login"),
                 ),
 
                 ft.Container(height=30),
@@ -218,6 +226,7 @@ def pantalla_bienvenida(page):
                                 color=GRIS_CLARO,
                             ),
                         ),
+
                         ft.TextSpan(
                             "Términos de servicio",
                             style=ft.TextStyle(
@@ -235,6 +244,7 @@ def pantalla_bienvenida(page):
         expand=True,
         bgcolor=GRIS_APP,
         padding=20,
+
         content=ft.Row(
             expand=True,
             spacing=0,
@@ -246,4 +256,6 @@ def pantalla_bienvenida(page):
     )
 
     page.add(vista)
-    page.update()
+
+if __name__ == "__main__":
+    ft.run(screen_welcome)

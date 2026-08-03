@@ -1,7 +1,7 @@
 import os
 
 # Carpeta principal del proyecto
-carpeta_proyecto = "."
+carpeta_proyecto = "screens"  # Cambia esto a la ruta de tu proyecto si es necesario
 
 # Archivo de salida
 archivo_salida = "todos_los_codigos.txt"
