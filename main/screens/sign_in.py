@@ -1,26 +1,36 @@
 """
-Pantalla de inicio de sesión (screens/login_screen.py).
+Pantalla de inicio de sesión (screens/sign_in.py).
 
 Layout de dos paneles: panel izquierdo con marca (logo + tagline),
-panel derecho con el formulario de login. Los campos ya son
-ft.TextField funcionales — falta conectar la lógica real de
-autenticación (se hace en el siguiente paso del flujo).
+panel derecho con el formulario de login, ya conectado a la base de
+datos real (database.authenticate_user).
 """
+
+import os
+import sys
 
 import flet as ft
 
-# ---- Paleta de colores (tomada del CSS) ----
-COLOR_NAVY = "#001845"             # rgba(0, 24, 69, 1)
-COLOR_SIDEBAR = "#002060"          # rgba(0, 32, 96, 1) — usado en el degradado de marca
-COLOR_TURQUOISE = "#40E0D0"
-COLOR_GRAY_TEXT = "#6B7A99"        # rgba(107, 122, 153, 1)
-COLOR_PLACEHOLDER = "#99A1AF"      # rgba(153, 161, 175, 1)
-COLOR_INPUT_BG = "#F9FAFB"         # rgba(249, 250, 251, 1)
-COLOR_BORDER = "#E5E7EB"           # rgba(229, 231, 235, 1)
-COLOR_DIVIDER = "#F3F4F6"          # rgba(243, 244, 246, 1)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-BRAND_PANEL_WEIGHT = 38   # ~38% del ancho total, como en el diseño
-FORM_PANEL_WEIGHT = 62    # ~62% del ancho total
+import database  # noqa: E402
+import session  # noqa: E402
+
+# ---- Paleta de colores ----
+COLOR_NAVY = "#001845"
+COLOR_SIDEBAR = "#002060"
+COLOR_TURQUOISE = "#40E0D0"
+COLOR_GRAY_TEXT = "#6B7A99"
+COLOR_PLACEHOLDER = "#99A1AF"
+COLOR_INPUT_BG = "#F9FAFB"
+COLOR_BORDER = "#E5E7EB"
+COLOR_DIVIDER = "#F3F4F6"
+COLOR_ERROR = "#DC2626"
+
+BRAND_PANEL_WEIGHT = 38
+FORM_PANEL_WEIGHT = 62
 
 
 def screen_signin(page: ft.Page):
@@ -31,13 +41,6 @@ def screen_signin(page: ft.Page):
         "Nunito": "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/Nunito%5Bwght%5D.ttf"
     }
     page.theme = ft.Theme(font_family="Nunito")
-
-    page.window.width = 1200
-    page.window.height = 780
-    page.window.min_width = 900
-    page.window.min_height = 650
-    page.window.resizable = True
-    page.run_task(page.window.center)
 
     # ================================================================
     # PANEL IZQUIERDO — Marca
@@ -165,6 +168,8 @@ def screen_signin(page: ft.Page):
         can_reveal_password=True,
     )
 
+    error_text = ft.Text("", size=14, color=COLOR_ERROR, visible=False, text_align=ft.TextAlign.CENTER)
+
     forgot_password = ft.Container(
         content=ft.Text("¿Olvidaste tu contraseña?", size=15, weight=ft.FontWeight.BOLD, color=COLOR_TURQUOISE),
         alignment=ft.Alignment.CENTER_RIGHT,
@@ -173,8 +178,18 @@ def screen_signin(page: ft.Page):
     )
 
     def handle_login(e):
-        # TODO: conectar con la lógica real de autenticación
-        print("Iniciar sesión:", email_field.value)
+        error_text.visible = False
+        error_text.update()
+
+        ok, mensaje, user = database.authenticate_user(email_field.value, password_field.value)
+        if not ok:
+            error_text.value = mensaje
+            error_text.visible = True
+            error_text.update()
+            return
+
+        session.set_current_user(user)
+        page.go("/dashboard")
 
     login_button = ft.Container(
         content=ft.Text("Iniciar sesión", size=17.5, color=COLOR_NAVY, weight=ft.FontWeight.W_600),
@@ -223,7 +238,8 @@ def screen_signin(page: ft.Page):
                     ],
                     spacing=12.5,
                 ),
-                ft.Container(content=login_button, padding=ft.Padding.only(top=20)),
+                ft.Container(content=error_text, padding=ft.Padding.only(top=10)),
+                ft.Container(content=login_button, padding=ft.Padding.only(top=10)),
                 ft.Container(content=signup_row, padding=ft.Padding.only(top=20)),
             ],
             spacing=0,
@@ -262,4 +278,10 @@ def screen_signin(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.run(screen_signin)
+    def _standalone(page: ft.Page):
+        page.window.width = 1200
+        page.window.height = 780
+        page.run_task(page.window.center)
+        screen_signin(page)
+
+    ft.run(_standalone)
