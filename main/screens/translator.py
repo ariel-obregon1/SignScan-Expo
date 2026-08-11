@@ -1,22 +1,11 @@
 """
-Pantalla de traducción de lenguaje de señas (screens/traductor.py).
+Pantalla de traducción de lenguaje de señas (screens/translator.py).
 
-Estructura de carpetas asumida:
-    main/
-      screens/
-        traductor.py          <- este archivo
-      hand_detector.py
-      modelo_lstm.keras
-      clases.npy
-      X_mean.npy
-      X_std.npy
-      hand_landmarker.task
-
-El video de la cámara se muestra en su propia ventana de OpenCV
-(igual que antes), pero ahora corre encima la lógica de
-predict_lstm.py: detección de manos con MediaPipe + modelo LSTM +
-estabilización de la predicción. El texto reconocido también se
-refleja en vivo dentro del panel derecho de la app de Flet.
+El video de la cámara se muestra en su propia ventana de OpenCV, con
+la lógica de predict_lstm.py corriendo encima: detección de manos con
+MediaPipe + modelo LSTM + estabilización de la predicción. El texto
+reconocido también se refleja en vivo dentro del panel derecho de la
+app de Flet.
 """
 
 import os
@@ -53,7 +42,7 @@ X_STD_PATH = os.path.join(PROJECT_ROOT, "X_std.npy")
 HAND_LANDMARKER_PATH = os.path.join(PROJECT_ROOT, "hand_landmarker.task")
 
 
-# ---- Paleta de colores (tomada del CSS original) ----
+# ---- Paleta de colores ----
 COLOR_BG_DARK = "#001030"
 COLOR_CARD_BLUE = "#002060"
 COLOR_TURQUOISE = "#40E0D0"
@@ -71,34 +60,27 @@ CAMERA_INDEX = 0
 WINDOW_TITLE = "SignScan LSTM (Q: salir | R: re-sincronizar)"
 
 # ---- Geometría estimada del recuadro de cámara ----
-# Flet no expone directamente la posición absoluta en pantalla de un
-# control, así que la calculamos a partir de los mismos valores de
-# diseño usados al construir la UI (paddings, spacing, fracción de
-# columna). Es una aproximación: puede variar unos pixeles según el
-# tema/escalado de Windows. Si te queda desalineado, ajusta
-# CALIBRATION_OFFSET_X / CALIBRATION_OFFSET_Y más abajo.
-HEADER_HEIGHT = 117          # padding top 40 + fila ~57 + padding bottom 20
-MAIN_ROW_SIDE_PADDING = 40   # padding left/right de main_row_container
+HEADER_HEIGHT = 117
+MAIN_ROW_SIDE_PADDING = 40
 MAIN_ROW_BOTTOM_PADDING = 40
-COLUMN_SPACING = 25          # spacing entre columnas del ResponsiveRow
-LEFT_COLUMN_FRACTION = 7 / 12   # col={"md": 7} de un total de 12
-ACTIVAR_BTN_HEIGHT = 82      # padding vertical + texto + margin top
+COLUMN_SPACING = 25
+LEFT_COLUMN_FRACTION = 7 / 12
+ACTIVAR_BTN_HEIGHT = 82
 ERROR_TEXT_RESERVED = 20
-LEFT_COLUMN_INNER_SPACING = 16  # spacing=8 x 2 huecos
+LEFT_COLUMN_INNER_SPACING = 16
 
-TITLE_BAR_HEIGHT = 32        # alto aproximado de la barra de título nativa
-WINDOW_BORDER = 8            # borde/sombra aproximado de la ventana
+# La app corre en full_screen (main.py), así que no hay barra de
+# título ni borde de ventana nativos que restar.
+TITLE_BAR_HEIGHT = 0
+WINDOW_BORDER = 0
 
 CALIBRATION_OFFSET_X = 0
 CALIBRATION_OFFSET_Y = 0
 
-REPOSITION_EVERY_N_FRAMES = 20  # qué tan seguido se re-sincroniza la posición
+REPOSITION_EVERY_N_FRAMES = 20
 
 
 def compute_camera_screen_rect(page: ft.Page):
-    """Devuelve (x, y, ancho, alto) en coordenadas de pantalla donde
-    debería ir la ventana de OpenCV para calzar con el recuadro
-    turquesa de la app."""
     win_left = page.window.left or 0
     win_top = page.window.top or 0
     win_width = page.window.width or CONTENT_MAX_WIDTH
@@ -126,7 +108,7 @@ def compute_camera_screen_rect(page: ft.Page):
         max(150, int(camera_height)),
     )
 
-# ---- Parámetros del pipeline (idénticos a predict_lstm.py) ----
+
 FRAMES_MODELO = 45
 MIN_FRAMES_CON_MANOS = 20
 HISTORIAL_LEN = 5
@@ -137,15 +119,12 @@ UMBRAL_CONFIANZA = 0.70
 UMBRAL_DIFERENCIA = 0.15
 
 
-# ------------------------------------------------------------------
-# Carga perezosa y cacheada del modelo (pesado: sólo una vez por app)
-# ------------------------------------------------------------------
 _model_cache = {"model": None, "labels": None, "X_mean": None, "X_std": None}
 
 
 def _get_model():
     if _model_cache["model"] is None:
-        from keras.models import load_model  # import tardío: tensorflow pesa al cargar
+        from keras.models import load_model
 
         _model_cache["model"] = load_model(MODEL_PATH)
         _model_cache["labels"] = np.load(LABELS_PATH, allow_pickle=True)
@@ -166,8 +145,6 @@ class SignLanguageTranslator:
         self.on_error = on_error
         self.on_text_change = on_text_change
         self.on_prediction_change = on_prediction_change
-        # Callback sin argumentos que devuelve (x, y, ancho, alto) en
-        # pantalla donde debe ir la ventana de OpenCV.
         self.get_camera_rect = get_camera_rect
 
         self._cap = None
@@ -202,8 +179,6 @@ class SignLanguageTranslator:
         if self._thread is not None:
             self._thread.join(timeout=5.0)
             self._thread = None
-
-    # ---------------- internals ----------------
 
     def _fail(self, message: str):
         self._starting = False
@@ -262,9 +237,6 @@ class SignLanguageTranslator:
                 self.on_stopped()
 
     def _reposition_window(self):
-        """Mueve y redimensiona la ventana de OpenCV para que calce con
-        el recuadro de cámara de la app de Flet. Se ignora en silencio
-        si algo falla (por ejemplo, si la ventana ya se cerró)."""
         if self.get_camera_rect is None:
             return
         try:
@@ -304,10 +276,6 @@ class SignLanguageTranslator:
         ultima_pred_raw = None
         texto_reportado = None
 
-        # cap.get(CAP_PROP_POS_MSEC) es para archivos de video; en una
-        # cámara en vivo suele devolver siempre 0, y MediaPipe exige que
-        # el timestamp sea estrictamente creciente en modo VIDEO. Por
-        # eso usamos nuestro propio reloj monotónico en su lugar.
         loop_start = time.monotonic()
         last_timestamp_ms = -1
 
@@ -415,7 +383,6 @@ class SignLanguageTranslator:
                 if self.on_prediction_change:
                     self.on_prediction_change(pred_estable, confianza)
 
-            # ---- HUD sobre el frame ----
             if top_indices is not None:
                 y_pos = 300
                 for i in range(min(3, len(labels))):
@@ -447,24 +414,31 @@ class SignLanguageTranslator:
             if key == ord("q") or key == 27:
                 break
             elif key == ord("r"):
-                # Re-sincroniza manualmente si por algo quedó desalineada.
                 self._reposition_window()
             elif key == 8:
                 texto = texto[:-1]
             elif key == ord("c"):
                 texto = ""
 
-            # Da un margen de ~1s / 15 frames antes de confiar en esta
-            # verificación: en algunos sistemas la ventana reporta
-            # "no visible" en los primerísimos frames aunque en
-            # realidad sí se está mostrando (falso positivo que cerraba
-            # la cámara casi de inmediato).
             if frame_count > 15:
                 try:
                     if cv2.getWindowProperty(WINDOW_TITLE, cv2.WND_PROP_VISIBLE) < 1:
                         break
                 except cv2.error:
                     break
+
+
+# ------------------------------------------------------------------
+# Registro global del traductor activo (para que main.py pueda
+# apagar la cámara al cambiar de pantalla o cerrar la app).
+# ------------------------------------------------------------------
+_active_translator = {"instance": None}
+
+
+def stop_active_translator():
+    t = _active_translator["instance"]
+    if t is not None and t.is_busy:
+        t.stop()
 
 
 def screen_translator(page: ft.Page):
@@ -477,13 +451,6 @@ def screen_translator(page: ft.Page):
     }
     page.theme = ft.Theme(font_family="Nunito")
 
-    page.window.width = 1280
-    page.window.height = 820
-    page.window.min_width = 1000
-    page.window.min_height = 650
-    page.window.resizable = True
-    page.run_task(page.window.center)
-
     # ---------- Header ----------
     back_button = ft.Container(
         content=ft.Icon(ft.Icons.ARROW_BACK, color=ft.Colors.WHITE, size=20),
@@ -492,7 +459,7 @@ def screen_translator(page: ft.Page):
         bgcolor=COLOR_BACK_BTN_BG,
         border_radius=16.5,
         alignment=ft.Alignment.CENTER,
-        on_click=lambda e: page.go("/") if page.route != "/" else None,
+        on_click=lambda e: page.go("/dashboard"),
     )
 
     header = ft.Row(
@@ -591,7 +558,6 @@ def screen_translator(page: ft.Page):
         expand=3,
     )
 
-    # ---------- Tarjeta de consejos ----------
     tips_items = [
         "• Coloca tu mano dentro del recuadro turquesa",
         "• Asegúrate de tener buena iluminación",
@@ -621,7 +587,6 @@ def screen_translator(page: ft.Page):
         expand=True,
     )
 
-    # ---------- Callbacks del traductor (corren en el hilo de captura) ----------
     def set_idle_state():
         activar_btn_text.value = "🎥 Iniciar Traducción"
         activar_btn.bgcolor = COLOR_TURQUOISE
@@ -673,6 +638,7 @@ def screen_translator(page: ft.Page):
         on_prediction_change=handle_prediction_change,
         get_camera_rect=lambda: compute_camera_screen_rect(page),
     )
+    _active_translator["instance"] = translator
 
     def toggle_camera(e):
         if translator.is_busy:
@@ -731,14 +697,12 @@ def screen_translator(page: ft.Page):
 
     page.add(ft.Row(controls=[root_container], alignment=ft.MainAxisAlignment.CENTER, expand=True))
 
-    def handle_window_event(e: ft.WindowEvent):
-        if e.type == ft.WindowEventType.CLOSE:
-            translator.stop()
-            page.run_task(page.window.destroy)
-
-    page.window.prevent_close = True
-    page.window.on_event = handle_window_event
-
 
 if __name__ == "__main__":
-    ft.run(screen_translator)
+    def _standalone(page: ft.Page):
+        page.window.width = 1280
+        page.window.height = 820
+        page.run_task(page.window.center)
+        screen_translator(page)
+
+    ft.run(_standalone)

@@ -1,6 +1,16 @@
 # screens/sign_up.py
 
+import os
+import sys
+
 import flet as ft
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+import database  # noqa: E402
+import session  # noqa: E402
 
 
 # =========================
@@ -14,6 +24,7 @@ TURQUESA = "#40E0D0"
 GRIS_APP = "#E5E7EB"
 GRIS_TEXTO = "#6B7A99"
 GRIS_CLARO = "#9BA8BF"
+ROJO_ERROR = "#DC2626"
 
 BLANCO = "#FFFFFF"
 
@@ -34,7 +45,6 @@ def screen_signup(page):
 
     page.controls.clear()
 
-
     # =========================
     # INPUTS
     # =========================
@@ -51,20 +61,17 @@ def screen_signup(page):
         "border_radius": 14,
     }
 
-
     nombre = ft.TextField(
         label="Nombre completo",
         hint_text="Ingresa tu nombre",
         **estilo_input
     )
 
-
     correo = ft.TextField(
         label="Correo electrónico",
         hint_text="ejemplo@email.com",
         **estilo_input
     )
-
 
     password = ft.TextField(
         label="Contraseña",
@@ -74,7 +81,6 @@ def screen_signup(page):
         **estilo_input
     )
 
-
     confirmar = ft.TextField(
         label="Confirmar contraseña",
         hint_text="Repite tu contraseña",
@@ -83,6 +89,32 @@ def screen_signup(page):
         **estilo_input
     )
 
+    error_text = ft.Text("", size=13, color=ROJO_ERROR, visible=False, text_align=ft.TextAlign.CENTER)
+
+    # =========================
+    # VALIDACIÓN + REGISTRO
+    # =========================
+
+    def mostrar_error(mensaje: str):
+        error_text.value = mensaje
+        error_text.visible = True
+        error_text.update()
+
+    def handle_signup(e):
+        error_text.visible = False
+        error_text.update()
+
+        if password.value != confirmar.value:
+            mostrar_error("Las contraseñas no coinciden")
+            return
+
+        ok, mensaje, user = database.create_user(nombre.value, correo.value, password.value)
+        if not ok:
+            mostrar_error(mensaje)
+            return
+
+        session.set_current_user(user)
+        page.go("/perfil")
 
     # =========================
     # PANEL IZQUIERDO
@@ -166,7 +198,12 @@ def screen_signup(page):
             ft.Container(
                 width=65,
                 height=65,
-                border=ft.border.all(1,"#E2E8F0"),
+                border=ft.Border(
+                    left=ft.BorderSide(1, "#E2E8F0"),
+                    top=ft.BorderSide(1, "#E2E8F0"),
+                    right=ft.BorderSide(1, "#E2E8F0"),
+                    bottom=ft.BorderSide(1, "#E2E8F0"),
+                ),
                 border_radius=14,
 
                 content=ft.Text(
@@ -174,7 +211,7 @@ def screen_signup(page):
                     size=24,
                 ),
 
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment(0, 0),
             ),
 
 
@@ -182,7 +219,12 @@ def screen_signup(page):
             ft.Container(
                 width=65,
                 height=65,
-                border=ft.border.all(1,"#E2E8F0"),
+                border=ft.Border(
+                    left=ft.BorderSide(1, "#E2E8F0"),
+                    top=ft.BorderSide(1, "#E2E8F0"),
+                    right=ft.BorderSide(1, "#E2E8F0"),
+                    bottom=ft.BorderSide(1, "#E2E8F0"),
+                ),
                 border_radius=14,
 
                 content=ft.Text(
@@ -190,7 +232,7 @@ def screen_signup(page):
                     size=22,
                 ),
 
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment(0, 0),
             ),
 
 
@@ -198,7 +240,12 @@ def screen_signup(page):
             ft.Container(
                 width=65,
                 height=65,
-                border=ft.border.all(1,"#E2E8F0"),
+                border=ft.Border(
+                    left=ft.BorderSide(1, "#E2E8F0"),
+                    top=ft.BorderSide(1, "#E2E8F0"),
+                    right=ft.BorderSide(1, "#E2E8F0"),
+                    bottom=ft.BorderSide(1, "#E2E8F0"),
+                ),
                 border_radius=14,
 
                 content=ft.Text(
@@ -206,7 +253,7 @@ def screen_signup(page):
                     size=26,
                 ),
 
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment(0, 0),
             ),
 
         ]
@@ -219,7 +266,8 @@ def screen_signup(page):
     # =========================
 
     formulario = ft.Column(
-
+        expand=True,
+        scroll=ft.ScrollMode.AUTO,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 
         controls=[
@@ -330,7 +378,11 @@ def screen_signup(page):
             confirmar,
 
 
-            ft.Container(height=15),
+            ft.Container(height=10),
+
+            error_text,
+
+            ft.Container(height=5),
 
 
 
@@ -344,7 +396,7 @@ def screen_signup(page):
                 bgcolor=TURQUESA,
                 color=AZUL_OSCURO,
 
-                on_click=lambda e: page.go("/perfil")
+                on_click=handle_signup,
 
             ),
 
@@ -372,7 +424,7 @@ def screen_signup(page):
 
                         "Iniciar sesión",
 
-                        on_click=lambda e: page.go("/login")
+                        on_click=lambda e: page.go("/login"),
 
                     ),
 
@@ -458,5 +510,7 @@ def screen_signup(page):
 
     page.add(vista)
     page.update()
+
+
 if __name__ == "__main__":
     ft.run(screen_signup)

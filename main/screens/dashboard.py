@@ -1,27 +1,36 @@
 """
-Pantalla de inicio / dashboard (screens/home_screen.py).
+Pantalla de inicio / dashboard (screens/dashboard.py).
 
 Sidebar de navegación + saludo + tarjetas de racha/progreso + grid de
-módulos. Sigue la misma paleta y convenciones que traductor.py para
-que ambas pantallas se vean consistentes dentro de la misma app.
+módulos. Muestra el nombre/correo/avatar del usuario logueado
+(session.current_user) en vez de datos de ejemplo.
 """
+
+import os
+import sys
 
 import flet as ft
 
-# ---- Paleta de colores (tomada del CSS) ----
-COLOR_SIDEBAR = "#002060"          # rgba(0, 32, 96, 1)
-COLOR_SIDEBAR_DARKER = "#001845"   # rgba(0, 24, 69, 1) — chip de usuario
-COLOR_BG_MAIN = "#EEF2F7"          # rgba(238, 242, 247, 1)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+import session  # noqa: E402
+
+# ---- Paleta de colores ----
+COLOR_SIDEBAR = "#002060"
+COLOR_SIDEBAR_DARKER = "#001845"
+COLOR_BG_MAIN = "#EEF2F7"
 COLOR_TURQUOISE = "#40E0D0"
 COLOR_GOLD = "#FFD700"
-COLOR_PURPLE = "#8B5CF6"           # rgba(139, 92, 246, 1)
-COLOR_RED = "#DC2626"              # rgba(220, 38, 38, 1)
-COLOR_NAVY_TEXT = "#002060"        # rgba(0, 32, 96, 1)
-COLOR_GRAY_TEXT = "#6B7A99"        # rgba(107, 122, 153, 1)
-COLOR_LIGHT_GRAY_TEXT = "#9BA8BF"  # rgba(155, 168, 191, 1)
-COLOR_CARD_BORDER = "#F3F4F6"      # rgba(243, 244, 246, 1)
-COLOR_ROW_BG = "#F8FAFB"           # rgba(248, 250, 251, 1)
-COLOR_PROGRESS_TRACK = "#E5E7EB"   # rgba(229, 231, 235, 1)
+COLOR_PURPLE = "#8B5CF6"
+COLOR_RED = "#DC2626"
+COLOR_NAVY_TEXT = "#002060"
+COLOR_GRAY_TEXT = "#6B7A99"
+COLOR_LIGHT_GRAY_TEXT = "#9BA8BF"
+COLOR_CARD_BORDER = "#F3F4F6"
+COLOR_ROW_BG = "#F8FAFB"
+COLOR_PROGRESS_TRACK = "#E5E7EB"
 
 SIDEBAR_WIDTH = 260
 
@@ -35,12 +44,9 @@ def screen_dashboard(page: ft.Page):
     }
     page.theme = ft.Theme(font_family="Nunito")
 
-    page.window.width = 1440
-    page.window.height = 900
-    page.window.min_width = 1100
-    page.window.min_height = 700
-    page.window.resizable = True
-    page.run_task(page.window.center)
+    user_name = session.current_user.get("name") or "Usuario"
+    user_email = session.current_user.get("email") or ""
+    user_avatar = session.current_user.get("avatar") or "🌟"
 
     # ================================================================
     # SIDEBAR
@@ -94,7 +100,7 @@ def screen_dashboard(page: ft.Page):
         content=ft.Row(
             controls=[
                 ft.Container(
-                    content=ft.Text("🌟", size=16),
+                    content=ft.Text(user_avatar, size=16),
                     width=44,
                     height=44,
                     bgcolor=COLOR_SIDEBAR_DARKER,
@@ -104,8 +110,8 @@ def screen_dashboard(page: ft.Page):
                 ),
                 ft.Column(
                     controls=[
-                        ft.Text("Usuario Google", size=14, color=ft.Colors.WHITE),
-                        ft.Text("google@demo.com", size=11, weight=ft.FontWeight.BOLD,
+                        ft.Text(user_name, size=14, color=ft.Colors.WHITE),
+                        ft.Text(user_email, size=11, weight=ft.FontWeight.BOLD,
                                 color=ft.Colors.with_opacity(0.7, ft.Colors.WHITE)),
                     ],
                     spacing=2,
@@ -132,6 +138,10 @@ def screen_dashboard(page: ft.Page):
     )
     nav_container = ft.Container(content=nav_column, padding=ft.Padding.symmetric(horizontal=15, vertical=20))
 
+    def handle_logout(e):
+        session.clear_current_user()
+        page.go("/")
+
     logout_button = ft.Container(
         content=ft.Row(
             controls=[
@@ -143,6 +153,7 @@ def screen_dashboard(page: ft.Page):
         padding=ft.Padding.symmetric(horizontal=20, vertical=13),
         border_radius=20,
         ink=True,
+        on_click=handle_logout,
     )
     logout_container = ft.Container(content=logout_button, padding=ft.Padding.only(left=15, right=15, bottom=30))
 
@@ -152,7 +163,7 @@ def screen_dashboard(page: ft.Page):
                 logo_row,
                 user_card,
                 nav_container,
-                ft.Container(expand=True),  # empuja "Cerrar sesión" hasta abajo
+                ft.Container(expand=True),
                 logout_container,
             ],
             spacing=0,
@@ -170,7 +181,7 @@ def screen_dashboard(page: ft.Page):
             controls=[
                 ft.Column(
                     controls=[
-                        ft.Text("Hola, Usuario Google! 👋", size=30, color=COLOR_NAVY_TEXT),
+                        ft.Text(f"Hola, {user_name}! 👋", size=30, color=COLOR_NAVY_TEXT),
                         ft.Text("Continúa aprendiendo hoy", size=17.5, color=COLOR_GRAY_TEXT),
                     ],
                     spacing=3,
@@ -233,7 +244,6 @@ def screen_dashboard(page: ft.Page):
     # Marcador general (barra de progreso grande)
     # ================================================================
     def simple_progress_bar(percent: int, color: str, height: int = 8):
-        # Barra simple: track gris + relleno proporcional con Row/expand.
         filled = max(percent, 0)
         empty = max(100 - filled, 0)
         bar_controls = []
@@ -288,7 +298,6 @@ def screen_dashboard(page: ft.Page):
         border_radius=20,
     )
 
-    # ---- Filas de categorías (Básico / Intermedio / Difícil) ----
     def category_label(text: str):
         return ft.Text(text, size=10, color=COLOR_GRAY_TEXT)
 
@@ -316,7 +325,6 @@ def screen_dashboard(page: ft.Page):
         )
 
     def topic_row_stacked(emoji: str, name: str, percent: int, percent_color: str):
-        # Variante usada en la categoría "Difícil" (emoji arriba, barra abajo)
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -391,7 +399,7 @@ def screen_dashboard(page: ft.Page):
     # ================================================================
     # Módulos
     # ================================================================
-    def module_card(emoji: str, title: str, subtitle: str, bgcolor, text_color):
+    def module_card(emoji: str, title: str, subtitle: str, bgcolor, text_color, route: str | None = None):
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -415,6 +423,7 @@ def screen_dashboard(page: ft.Page):
             border_radius=20,
             expand=1,
             ink=True,
+            on_click=(lambda e: page.go(route)) if route else None,
         )
 
     modulos_grid = ft.Column(
@@ -422,7 +431,7 @@ def screen_dashboard(page: ft.Page):
             ft.Row(
                 controls=[
                     module_card("📷", "Escanear Señas", "Detecta señas en tiempo real con IA",
-                                COLOR_TURQUOISE, COLOR_NAVY_TEXT),
+                                COLOR_TURQUOISE, COLOR_NAVY_TEXT, route="/escanear"),
                     module_card("📹", "Video Chat", "Videollamadas con interpretación",
                                 COLOR_SIDEBAR, ft.Colors.WHITE),
                 ],
@@ -483,4 +492,10 @@ def screen_dashboard(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.run(screen_dashboard)
+    def _standalone(page: ft.Page):
+        page.window.width = 1440
+        page.window.height = 900
+        page.run_task(page.window.center)
+        screen_dashboard(page)
+
+    ft.run(_standalone)
