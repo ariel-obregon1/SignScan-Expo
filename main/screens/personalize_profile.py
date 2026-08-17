@@ -27,11 +27,20 @@ TEXT_GRAY = "#6B7A99"
 WHITE_TEXT = ft.Colors.with_opacity(0.6, ft.Colors.WHITE)
 INPUT_BORDER = "#E5E7EB"
 AVATAR_BG = "#F9FAFB"
+DIVIDER_COLOR = "#F0F2F5"
 
 AVATAR_EMOJIS = [
     "🤟", "👋", "🙌", "👏", "🤲", "🌟", "🦋", "🌈", "🐬", "🦁",
     "🐧", "🦊", "🌺", "🍀", "⭐", "💎", "🚀", "🏆", "❤️", "🎵",
 ]
+
+CARD_WIDTH = 500
+AVATAR_OUTER_SIZE = 118
+AVATAR_INNER_SIZE = 110
+
+
+def _section_divider():
+    return ft.Container(height=1, bgcolor=DIVIDER_COLOR, margin=ft.Margin.symmetric(vertical=22))
 
 
 def screen_personalizeprofile(page: ft.Page):
@@ -49,7 +58,7 @@ def screen_personalizeprofile(page: ft.Page):
     # visual priority over the emoji avatar.
     selected_photo = {"path": session.current_user.get("photo")}
 
-    avatar_preview = ft.Text(selected_avatar["value"], size=50)
+    avatar_preview = ft.Text(selected_avatar["value"], size=48)
     avatar_buttons = {}
 
     # ================================================================
@@ -61,8 +70,8 @@ def screen_personalizeprofile(page: ft.Page):
         if selected_photo["path"]:
             return ft.Image(
                 src=selected_photo["path"],
-                width=110,
-                height=110,
+                width=AVATAR_INNER_SIZE,
+                height=AVATAR_INNER_SIZE,
                 fit=ft.BoxFit.COVER,
                 border_radius=999,
             )
@@ -84,48 +93,72 @@ def screen_personalizeprofile(page: ft.Page):
         avatar_circle.update()
 
     # ================================================================
-    # Header (over navy background, outside the white card)
+    # Header (over navy background, outside the white card). The close
+    # button sits in the top-right corner, aligned with the card's edge
+    # below, instead of stacked under the subtitle.
     # ================================================================
     def close_setup(e):
         page.go("/dashboard")
 
     close_button = ft.Container(
         content=ft.Icon(ft.Icons.CLOSE, size=20, color=ft.Colors.WHITE),
-        width=45,
-        height=45,
-        bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.WHITE),
-        border_radius=16.5,
+        width=42,
+        height=42,
+        bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.WHITE),
+        border_radius=14,
         alignment=ft.Alignment.CENTER,
         on_click=close_setup,
         ink=True,
     )
 
-    header = ft.Column(
+    header_stack = ft.Stack(
         controls=[
-            ft.Text("Your profile", size=25, color=ft.Colors.WHITE),
-            ft.Container(
-                content=ft.Text("Customize how others see you", size=15, color=WHITE_TEXT),
-                padding=ft.Padding.only(top=2.5),
+            ft.Column(
+                controls=[
+                    ft.Text("Your profile", size=27, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    ft.Container(
+                        content=ft.Text("Customize how others see you", size=15, color=WHITE_TEXT),
+                        padding=ft.Padding.only(top=4),
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=0,
             ),
-            ft.Container(content=close_button, padding=ft.Padding.only(top=15)),
+            ft.Container(content=close_button, alignment=ft.Alignment.TOP_RIGHT),
         ],
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        spacing=0,
+        width=CARD_WIDTH,
     )
-    header_container = ft.Container(content=header, padding=ft.Padding.only(bottom=25))
+    header_container = ft.Container(content=header_stack, padding=ft.Padding.only(bottom=28))
 
     # ================================================================
-    # Profile photo / large avatar + overlaid camera button
+    # Profile photo / large avatar + overlaid camera button.
+    # The avatar sits inside a soft turquoise-to-gold gradient ring for
+    # a slightly more premium look than a flat border.
     # ================================================================
     avatar_circle = ft.Container(
         content=build_avatar_content(),
-        width=110,
-        height=110,
+        width=AVATAR_INNER_SIZE,
+        height=AVATAR_INNER_SIZE,
         bgcolor=NAVY_BG,
-        border=ft.Border.all(3.5, TURQUOISE),
         border_radius=999,
         alignment=ft.Alignment.CENTER,
         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+    )
+
+    avatar_ring = ft.Container(
+        content=avatar_circle,
+        width=AVATAR_OUTER_SIZE,
+        height=AVATAR_OUTER_SIZE,
+        border_radius=999,
+        padding=4,
+        alignment=ft.Alignment.CENTER,
+        gradient=ft.LinearGradient(
+            begin=ft.Alignment.TOP_LEFT,
+            end=ft.Alignment.BOTTOM_RIGHT,
+            colors=[TURQUOISE, GOLD],
+        ),
+        shadow=ft.BoxShadow(spread_radius=1, blur_radius=18,
+                             color=ft.Colors.with_opacity(0.35, ft.Colors.BLACK), offset=ft.Offset(0, 6)),
     )
 
     camera_button = ft.Container(
@@ -135,6 +168,7 @@ def screen_personalizeprofile(page: ft.Page):
         bgcolor=GOLD,
         border_radius=999,
         alignment=ft.Alignment.CENTER,
+        border=ft.Border.all(3, ft.Colors.WHITE),
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=6,
                              color=ft.Colors.with_opacity(0.4, ft.Colors.BLACK), offset=ft.Offset(0, 2)),
         on_click=pick_photo,
@@ -143,21 +177,21 @@ def screen_personalizeprofile(page: ft.Page):
 
     avatar_stack = ft.Stack(
         controls=[
-            avatar_circle,
+            avatar_ring,
             ft.Container(content=camera_button, alignment=ft.Alignment.BOTTOM_RIGHT,
-                         width=110, height=110),
+                         width=AVATAR_OUTER_SIZE, height=AVATAR_OUTER_SIZE),
         ],
-        width=110,
-        height=110,
+        width=AVATAR_OUTER_SIZE,
+        height=AVATAR_OUTER_SIZE,
     )
 
     photo_section = ft.Column(
         controls=[
             avatar_stack,
             ft.Container(
-                content=ft.Text("Tap the camera icon to change your photo", size=11, color=TEXT_GRAY,
+                content=ft.Text("Tap the camera icon to change your photo", size=11.5, color=TEXT_GRAY,
                                  text_align=ft.TextAlign.CENTER),
-                padding=ft.Padding.only(top=10),
+                padding=ft.Padding.only(top=12),
             ),
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -170,6 +204,7 @@ def screen_personalizeprofile(page: ft.Page):
     username_field = ft.TextField(
         value=current_name,
         text_style=ft.TextStyle(size=17.5, color=NAVY_TEXT),
+        prefix_icon=ft.Icons.PERSON_OUTLINE_ROUNDED,
         border_color=INPUT_BORDER,
         border_width=0.9,
         border_radius=16.5,
@@ -181,9 +216,9 @@ def screen_personalizeprofile(page: ft.Page):
     username_section = ft.Column(
         controls=[
             ft.Text("Username", size=15, weight=ft.FontWeight.BOLD, color=NAVY_TEXT),
-            username_field,
+            ft.Container(content=username_field, padding=ft.Padding.only(top=8)),
         ],
-        spacing=7.5,
+        spacing=0,
     )
 
     # ================================================================
@@ -191,7 +226,7 @@ def screen_personalizeprofile(page: ft.Page):
     # ================================================================
     def style_avatar_button(container: ft.Container, is_selected: bool):
         if is_selected:
-            container.bgcolor = ft.Colors.with_opacity(0.1, TURQUOISE)
+            container.bgcolor = ft.Colors.with_opacity(0.12, TURQUOISE)
             container.border = ft.Border.all(2, TURQUOISE)
         else:
             container.bgcolor = AVATAR_BG
@@ -236,7 +271,11 @@ def screen_personalizeprofile(page: ft.Page):
     avatar_section = ft.Column(
         controls=[
             ft.Text("Choose your avatar", size=15, weight=ft.FontWeight.BOLD, color=NAVY_TEXT),
-            ft.Container(content=avatar_grid, padding=ft.Padding.only(top=10)),
+            ft.Container(
+                content=ft.Text("Used when you don't have a photo set", size=12, color=TEXT_GRAY),
+                padding=ft.Padding.only(top=2),
+            ),
+            ft.Container(content=avatar_grid, padding=ft.Padding.only(top=12)),
         ],
         spacing=0,
     )
@@ -265,14 +304,21 @@ def screen_personalizeprofile(page: ft.Page):
         page.go("/dashboard")
 
     save_button = ft.Container(
-        content=ft.Text("Save and continue 🤟", size=17.5, color=NAVY_TEXT, weight=ft.FontWeight.W_600),
+        content=ft.Row(
+            controls=[
+                ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=19, color=NAVY_TEXT),
+                ft.Text("Save and continue", size=17.5, color=NAVY_TEXT, weight=ft.FontWeight.W_600),
+            ],
+            spacing=10,
+            alignment=ft.MainAxisAlignment.CENTER,
+        ),
         alignment=ft.Alignment.CENTER,
         bgcolor=TURQUOISE,
         border_radius=16.5,
         padding=ft.Padding.symmetric(vertical=17),
         width=float("inf"),
-        shadow=ft.BoxShadow(spread_radius=1, blur_radius=3,
-                             color=ft.Colors.with_opacity(0.3, ft.Colors.BLACK), offset=ft.Offset(0, 1)),
+        shadow=ft.BoxShadow(spread_radius=1, blur_radius=10,
+                             color=ft.Colors.with_opacity(0.35, ft.Colors.BLACK), offset=ft.Offset(0, 3)),
         on_click=save_and_continue,
         ink=True,
     )
@@ -284,17 +330,20 @@ def screen_personalizeprofile(page: ft.Page):
         content=ft.Column(
             controls=[
                 photo_section,
-                ft.Container(content=username_section, padding=ft.Padding.only(top=25)),
-                ft.Container(content=avatar_section, padding=ft.Padding.symmetric(vertical=20)),
+                _section_divider(),
+                username_section,
+                _section_divider(),
+                avatar_section,
+                ft.Container(height=26),
                 save_button,
             ],
             spacing=0,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         ),
-        width=480,
-        padding=30,
+        width=CARD_WIDTH,
+        padding=ft.Padding.symmetric(horizontal=32, vertical=32),
         bgcolor=ft.Colors.WHITE,
-        border_radius=30,
+        border_radius=28,
         shadow=ft.BoxShadow(spread_radius=2, blur_radius=50,
                              color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK), offset=ft.Offset(0, 25)),
     )

@@ -7,6 +7,7 @@ from screens.sign_up import screen_signup
 from screens.sign_in import screen_signin
 from screens.personalize_profile import screen_personalizeprofile
 from screens.dashboard import screen_dashboard
+from screens.community import screen_community
 
 DEFAULT_ROUTE = "/"
 
@@ -141,11 +142,11 @@ ROUTES = {
     "/profile": screen_personalizeprofile,
     "/dashboard": screen_dashboard,
     "/scan": screen_scan,
+    "/community": screen_community,
     # Sidebar entries of the dashboard that don't have their own screen
     # yet. They are listed so they show a placeholder instead of
     # silently sending the user back to the welcome screen.
     "/learn": screen_coming_soon,
-    "/community": screen_coming_soon,
     "/video": screen_coming_soon,
 }
 

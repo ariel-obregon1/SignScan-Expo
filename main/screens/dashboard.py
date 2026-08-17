@@ -23,6 +23,7 @@ COLOR_SIDEBAR_DARKER = "#001845"
 COLOR_BG_MAIN = "#EEF2F7"
 COLOR_TURQUOISE = "#40E0D0"
 COLOR_GOLD = "#FFD700"
+COLOR_AMBER = "#F59E0B"
 COLOR_PURPLE = "#8B5CF6"
 COLOR_RED = "#DC2626"
 COLOR_NAVY_TEXT = "#002060"
@@ -33,6 +34,14 @@ COLOR_ROW_BG = "#F8FAFB"
 COLOR_PROGRESS_TRACK = "#E5E7EB"
 
 SIDEBAR_WIDTH = 260
+
+# Subtle depth shared by the white cards on this screen, matching the
+# shadow style already used on the auth cards and community posts.
+CARD_SHADOW = ft.BoxShadow(
+    spread_radius=1, blur_radius=10,
+    color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK),
+    offset=ft.Offset(0, 3),
+)
 
 
 def screen_dashboard(page: ft.Page):
@@ -182,7 +191,7 @@ def screen_dashboard(page: ft.Page):
             controls=[
                 ft.Column(
                     controls=[
-                        ft.Text(f"Hi, {user_name}! 👋", size=30, color=COLOR_NAVY_TEXT),
+                        ft.Text(f"Hi, {user_name}! 👋", size=30, weight=ft.FontWeight.BOLD, color=COLOR_NAVY_TEXT),
                         ft.Text("Keep learning today", size=17.5, color=COLOR_GRAY_TEXT),
                     ],
                     spacing=3,
@@ -190,8 +199,8 @@ def screen_dashboard(page: ft.Page):
                 ft.Container(
                     content=ft.Row(
                         controls=[
-                            ft.Icon(ft.Icons.LOCAL_FIRE_DEPARTMENT_ROUNDED, size=16, color=COLOR_NAVY_TEXT),
-                            ft.Text("3", size=12, color=COLOR_NAVY_TEXT),
+                            ft.Icon(ft.Icons.LOCAL_FIRE_DEPARTMENT_ROUNDED, size=16, color="#92400E"),
+                            ft.Text("3", size=12, weight=ft.FontWeight.BOLD, color="#92400E"),
                         ],
                         spacing=4,
                         alignment=ft.MainAxisAlignment.CENTER,
@@ -199,7 +208,8 @@ def screen_dashboard(page: ft.Page):
                     padding=ft.Padding.symmetric(horizontal=14, vertical=8),
                     bgcolor=COLOR_GOLD,
                     border_radius=999,
-                    border=ft.Border.all(0.9, COLOR_CARD_BORDER),
+                    shadow=ft.BoxShadow(spread_radius=1, blur_radius=8,
+                                         color=ft.Colors.with_opacity(0.25, COLOR_GOLD), offset=ft.Offset(0, 2)),
                 ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -211,32 +221,42 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # Stat cards
+    # Stat cards — each stat now sits in a soft, accent-tinted icon
+    # circle instead of a bare emoji, and the value is bolder for more
+    # visual hierarchy.
     # ================================================================
-    def stat_card(emoji: str, value: str, label: str):
+    def stat_card(emoji: str, value: str, label: str, accent_color: str):
         return ft.Container(
             content=ft.Column(
                 controls=[
-                    ft.Text(emoji, size=30),
-                    ft.Text(value, size=30, color=COLOR_NAVY_TEXT),
-                    ft.Text(label, size=15, color=COLOR_GRAY_TEXT),
+                    ft.Container(
+                        content=ft.Text(emoji, size=22),
+                        width=52,
+                        height=52,
+                        bgcolor=ft.Colors.with_opacity(0.14, accent_color),
+                        border_radius=999,
+                        alignment=ft.Alignment.CENTER,
+                    ),
+                    ft.Text(value, size=28, weight=ft.FontWeight.BOLD, color=COLOR_NAVY_TEXT),
+                    ft.Text(label, size=14, color=COLOR_GRAY_TEXT),
                 ],
-                spacing=6,
+                spacing=10,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            padding=ft.Padding.symmetric(vertical=25),
+            padding=ft.Padding.symmetric(vertical=22),
             bgcolor=ft.Colors.WHITE,
             border=ft.Border.all(0.9, COLOR_CARD_BORDER),
             border_radius=20,
             expand=True,
             alignment=ft.Alignment.CENTER,
+            shadow=CARD_SHADOW,
         )
 
     stats_row = ft.Row(
         controls=[
-            stat_card("🔥", "1", "day streak"),
-            stat_card("🤟", "0", "signs learned"),
-            stat_card("⭐", "Basic", "level"),
+            stat_card("🔥", "1", "day streak", COLOR_AMBER),
+            stat_card("🤟", "0", "signs learned", COLOR_TURQUOISE),
+            stat_card("⭐", "Basic", "level", COLOR_PURPLE),
         ],
         spacing=20,
     )
@@ -297,6 +317,7 @@ def screen_dashboard(page: ft.Page):
         bgcolor=ft.Colors.WHITE,
         border=ft.Border.all(0.9, COLOR_CARD_BORDER),
         border_radius=20,
+        shadow=CARD_SHADOW,
     )
 
     def category_label(text: str):
@@ -344,86 +365,104 @@ def screen_dashboard(page: ft.Page):
             expand=True,
         )
 
-    basic_section = ft.Column(
-        controls=[
-            category_label("🌱 BASIC"),
-            ft.Column(
+    def category_card(label: str, content):
+        # Wraps each topic group in its own white card (matching
+        # scoreboard_card) instead of leaving the rows floating
+        # directly on the page background - groups them visually.
+        return ft.Container(
+            content=ft.Column(
                 controls=[
-                    topic_row("🔤", "Alphabet", 0, COLOR_TURQUOISE),
-                    topic_row("👋", "Greetings", 0, COLOR_TURQUOISE),
-                    topic_row("🔢", "Numbers", 0, COLOR_TURQUOISE),
-                    topic_row("🎨", "Colors", 0, COLOR_TURQUOISE),
+                    category_label(label),
+                    ft.Container(content=content, padding=ft.Padding.only(top=10)),
                 ],
-                spacing=10,
+                spacing=0,
             ),
-        ],
-        spacing=10,
+            padding=ft.Padding.symmetric(horizontal=18, vertical=16),
+            bgcolor=ft.Colors.WHITE,
+            border=ft.Border.all(0.9, COLOR_CARD_BORDER),
+            border_radius=20,
+            shadow=CARD_SHADOW,
+        )
+
+    basic_section = category_card(
+        "🌱 BASIC",
+        ft.Column(
+            controls=[
+                topic_row("🔤", "Alphabet", 0, COLOR_TURQUOISE),
+                topic_row("👋", "Greetings", 0, COLOR_TURQUOISE),
+                topic_row("🔢", "Numbers", 0, COLOR_TURQUOISE),
+                topic_row("🎨", "Colors", 0, COLOR_TURQUOISE),
+            ],
+            spacing=10,
+        ),
     )
 
-    intermediate_section = ft.Column(
-        controls=[
-            category_label("🚀 INTERMEDIATE"),
-            ft.Column(
-                controls=[
-                    topic_row("👨‍👩‍👧", "Family", 0, COLOR_PURPLE),
-                    topic_row("🍎", "Food", 0, COLOR_PURPLE),
-                ],
-                spacing=10,
-            ),
-        ],
-        spacing=10,
+    intermediate_section = category_card(
+        "🚀 INTERMEDIATE",
+        ft.Column(
+            controls=[
+                topic_row("👨‍👩‍👧", "Family", 0, COLOR_PURPLE),
+                topic_row("🍎", "Food", 0, COLOR_PURPLE),
+            ],
+            spacing=10,
+        ),
     )
 
-    advanced_section = ft.Column(
-        controls=[
-            category_label("🔥 ADVANCED"),
-            ft.Row(
-                controls=[
-                    topic_row_stacked("😊", "Emotions", 0, COLOR_RED),
-                    topic_row_stacked("🐾", "Animals", 0, COLOR_RED),
-                    topic_row_stacked("🏅", "Sports", 0, COLOR_RED),
-                ],
-                spacing=15,
-            ),
-        ],
-        spacing=10,
+    advanced_section = category_card(
+        "🔥 ADVANCED",
+        ft.Row(
+            controls=[
+                topic_row_stacked("😊", "Emotions", 0, COLOR_RED),
+                topic_row_stacked("🐾", "Animals", 0, COLOR_RED),
+                topic_row_stacked("🏅", "Sports", 0, COLOR_RED),
+            ],
+            spacing=15,
+        ),
     )
 
     progress_card = ft.Container(
         content=ft.Column(
             controls=[scoreboard_card, basic_section, intermediate_section, advanced_section],
-            spacing=25,
+            spacing=20,
         ),
         padding=ft.Padding.only(top=25),
     )
 
     # ================================================================
-    # Modules
+    # Modules — a small arrow now hints these cards are clickable, and
+    # they share the same soft shadow as the rest of the page's cards.
     # ================================================================
     def module_card(emoji: str, title: str, subtitle: str, bgcolor, text_color, route: str | None = None):
+        body = ft.Column(
+            controls=[
+                ft.Container(
+                    content=ft.Text(emoji, size=25),
+                    width=44,
+                    height=44,
+                    bgcolor=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
+                    border_radius=16.5,
+                    alignment=ft.Alignment.CENTER,
+                ),
+                ft.Text(title, size=17.5, color=text_color),
+                ft.Text(subtitle, size=11, weight=ft.FontWeight.BOLD, color=text_color,
+                        opacity=0.7),
+            ],
+            spacing=15,
+            horizontal_alignment=ft.CrossAxisAlignment.START,
+        )
+        arrow = ft.Container(
+            content=ft.Icon(ft.Icons.ARROW_FORWARD_ROUNDED, size=18, color=text_color),
+            alignment=ft.Alignment.TOP_RIGHT,
+            opacity=0.55,
+        )
         return ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Container(
-                        content=ft.Text(emoji, size=25),
-                        width=44,
-                        height=44,
-                        bgcolor=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
-                        border_radius=16.5,
-                        alignment=ft.Alignment.CENTER,
-                    ),
-                    ft.Text(title, size=17.5, color=text_color),
-                    ft.Text(subtitle, size=11, weight=ft.FontWeight.BOLD, color=text_color,
-                            opacity=0.7),
-                ],
-                spacing=15,
-                horizontal_alignment=ft.CrossAxisAlignment.START,
-            ),
+            content=ft.Stack(controls=[body, arrow]),
             padding=25,
             bgcolor=bgcolor,
             border_radius=20,
             expand=1,
             ink=True,
+            shadow=CARD_SHADOW,
             on_click=(lambda e: page.go(route)) if route else None,
         )
 
@@ -443,7 +482,7 @@ def screen_dashboard(page: ft.Page):
                     module_card("📖", "Learn Signs", "Interactive sign language lessons",
                                 COLOR_GOLD, COLOR_NAVY_TEXT),
                     module_card("👥", "Community", "Connect with deaf people",
-                                ft.Colors.WHITE, COLOR_NAVY_TEXT),
+                                ft.Colors.WHITE, COLOR_NAVY_TEXT, route="/community"),
                 ],
                 spacing=15,
             ),
@@ -454,7 +493,7 @@ def screen_dashboard(page: ft.Page):
     modules_section = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Text("Modules", size=22.5, color=COLOR_NAVY_TEXT),
+                ft.Text("Modules", size=22.5, weight=ft.FontWeight.BOLD, color=COLOR_NAVY_TEXT),
                 ft.Container(content=modules_grid, padding=ft.Padding.only(top=15)),
             ],
             spacing=0,
