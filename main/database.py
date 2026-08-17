@@ -1,14 +1,12 @@
 """
-Capa de base de datos (SQLite) para SignScan.
+Database layer (SQLite) for SignScan.
 
-Maneja la tabla de usuarios: creación de cuenta, autenticación y
-actualización de perfil. Las contraseñas nunca se guardan en texto
-plano — se hashean con PBKDF2-HMAC-SHA256 + salt aleatorio por
-usuario.
+Handles the users table: account creation, authentication, and
+profile updates. Passwords are never stored in plain text — they are
+hashed with PBKDF2-HMAC-SHA256 plus a random per-user salt.
 
-Ubicación: raíz del proyecto (junto a main.py, hand_detector.py, etc.)
-El archivo .db se crea automáticamente la primera vez que se llama a
-init_db().
+Location: project root (next to main.py, hand_detector.py, etc.)
+The .db file is created automatically the first time init_db() runs.
 """
 
 import binascii
@@ -26,7 +24,7 @@ PBKDF2_ITERATIONS = 100_000
 
 
 # ------------------------------------------------------------------
-# Conexión / esquema
+# Connection / schema
 # ------------------------------------------------------------------
 
 def get_connection() -> sqlite3.Connection:
@@ -37,8 +35,8 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db():
-    """Crea la tabla de usuarios si no existe. Llamar una vez al
-    arrancar la app (desde main.py)."""
+    """Creates the users table if it doesn't exist yet. Call once on
+    app startup (from main.py)."""
     conn = get_connection()
     try:
         conn.execute(
@@ -60,7 +58,7 @@ def init_db():
 
 
 # ------------------------------------------------------------------
-# Hashing de contraseñas
+# Password hashing
 # ------------------------------------------------------------------
 
 def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
@@ -79,7 +77,7 @@ def _verify_password(password: str, stored_hash_hex: str, stored_salt_hex: str) 
 
 
 # ------------------------------------------------------------------
-# Consultas
+# Queries
 # ------------------------------------------------------------------
 
 def get_user_by_email(email: str) -> dict | None:
@@ -107,22 +105,22 @@ def email_exists(email: str) -> bool:
 
 
 # ------------------------------------------------------------------
-# Registro / autenticación
+# Sign up / sign in
 # ------------------------------------------------------------------
 
 def create_user(name: str, email: str, password: str) -> tuple[bool, str, dict | None]:
-    """Crea una cuenta nueva. Devuelve (ok, mensaje, usuario|None)."""
+    """Creates a new account. Returns (ok, message, user|None)."""
     name = (name or "").strip()
     email = (email or "").strip().lower()
 
     if not name:
-        return False, "Ingresa tu nombre completo", None
+        return False, "Please enter your full name", None
     if not EMAIL_RE.match(email):
-        return False, "Correo electrónico inválido", None
+        return False, "Invalid email address", None
     if not password or len(password) < 8:
-        return False, "La contraseña debe tener al menos 8 caracteres", None
+        return False, "Password must be at least 8 characters long", None
     if email_exists(email):
-        return False, "Ya existe una cuenta con ese correo", None
+        return False, "An account with that email already exists", None
 
     pwd_hash, salt = _hash_password(password)
     conn = get_connection()
@@ -137,27 +135,27 @@ def create_user(name: str, email: str, password: str) -> tuple[bool, str, dict |
         conn.commit()
         user_id = cur.lastrowid
     except sqlite3.IntegrityError:
-        return False, "Ya existe una cuenta con ese correo", None
+        return False, "An account with that email already exists", None
     finally:
         conn.close()
 
-    return True, "Cuenta creada correctamente", get_user_by_id(user_id)
+    return True, "Account created successfully", get_user_by_id(user_id)
 
 
 def authenticate_user(email: str, password: str) -> tuple[bool, str, dict | None]:
-    """Verifica credenciales. Devuelve (ok, mensaje, usuario|None)."""
+    """Verifies credentials. Returns (ok, message, user|None)."""
     email = (email or "").strip().lower()
 
     if not email or not password:
-        return False, "Ingresa tu correo y contraseña", None
+        return False, "Enter your email and password", None
 
     user = get_user_by_email(email)
     if user is None:
-        return False, "No existe una cuenta con ese correo", None
+        return False, "No account found with that email", None
     if not _verify_password(password, user["password_hash"], user["salt"]):
-        return False, "Contraseña incorrecta", None
+        return False, "Incorrect password", None
 
-    return True, "Bienvenido de nuevo", user
+    return True, "Welcome back", user
 
 
 def update_profile(user_id: int, name: str | None = None, avatar: str | None = None):

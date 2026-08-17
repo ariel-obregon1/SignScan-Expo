@@ -1,10 +1,10 @@
 """
-Sesión en memoria del usuario logueado.
+In-memory session for the logged-in user.
 
-Muy simple a propósito: un diccionario a nivel de módulo que las
-pantallas leen/escriben para saber quién está usando la app en este
-momento. Se resetea cada vez que se cierra la app (no persiste entre
-ejecuciones — para eso está la tabla `users` en la base de datos).
+Deliberately simple: a module-level dictionary that screens read from
+and write to, to know who's using the app right now. It resets every
+time the app is closed (it does not persist across runs — that's what
+the `users` table in the database is for).
 """
 
 current_user = {

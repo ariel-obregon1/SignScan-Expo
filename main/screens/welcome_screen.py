@@ -1,26 +1,26 @@
 import flet as ft
 
 # =========================
-# COLORES
+# COLORS
 # =========================
 
-AZUL_OSCURO = "#001845"
-AZUL_PRINCIPAL = "#002060"
-TURQUESA = "#40E0D0"
+DARK_BLUE = "#001845"
+MAIN_BLUE = "#002060"
+TURQUOISE = "#40E0D0"
 
-GRIS_APP = "#E5E7EB"
+APP_GRAY = "#E5E7EB"
 
-GRIS_TEXTO = "#6B7A99"
-GRIS_CLARO = "#9BA8BF"
+TEXT_GRAY = "#6B7A99"
+LIGHT_GRAY = "#9BA8BF"
 
-BLANCO = "#FFFFFF"
+WHITE = "#FFFFFF"
 
 
 # =========================
-# TARJETAS
+# CARDS
 # =========================
 
-def _feature_card(icono, texto):
+def _feature_card(icon, text):
     return ft.Column(
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         spacing=8,
@@ -29,34 +29,29 @@ def _feature_card(icono, texto):
                 width=90,
                 height=90,
                 bgcolor="#244080",
-
-                # Si Border también da error, elimina estas 6 líneas
                 border=ft.Border(
                     left=ft.BorderSide(1, "#4DFFFFFF"),
                     top=ft.BorderSide(1, "#4DFFFFFF"),
                     right=ft.BorderSide(1, "#4DFFFFFF"),
                     bottom=ft.BorderSide(1, "#4DFFFFFF"),
                 ),
-
                 border_radius=20,
-
                 content=ft.Column(
                     expand=True,
                     alignment=ft.MainAxisAlignment.CENTER,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     controls=[
                         ft.Text(
-                            icono,
+                            icon,
                             size=35,
-                            color=BLANCO,
+                            color=WHITE,
                         )
                     ],
                 ),
             ),
-
             ft.Text(
-                texto,
-                color=BLANCO,
+                text,
+                color=WHITE,
                 weight=ft.FontWeight.BOLD,
                 size=12,
             ),
@@ -65,34 +60,35 @@ def _feature_card(icono, texto):
 
 
 # =========================
-# NAVEGACIÓN
+# NAVIGATION
 # =========================
 
-def abrir_crear_cuenta(page):
-    page.go("/crear-cuenta")
+def open_create_account(page):
+    page.go("/create-account")
 
 
 # =========================
-# PANTALLA
+# SCREEN
 # =========================
 
 def screen_welcome(page):
 
     page.clean()
 
-    panel_izquierdo = ft.Container(
+    left_panel = ft.Container(
         expand=4,
-        bgcolor=AZUL_PRINCIPAL,
+        bgcolor=MAIN_BLUE,
         padding=40,
 
         content=ft.Column(
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 
             controls=[
                 ft.Container(
-                    bgcolor=BLANCO,
+                    bgcolor=WHITE,
                     border_radius=30,
                     padding=20,
 
@@ -108,13 +104,13 @@ def screen_welcome(page):
                     "SignScan",
                     size=42,
                     weight=ft.FontWeight.BOLD,
-                    color=BLANCO,
+                    color=WHITE,
                 ),
 
                 ft.Text(
-                    "Rompiendo barreras de comunicación",
+                    "Breaking down communication barriers",
                     size=18,
-                    color=TURQUESA,
+                    color=TURQUOISE,
                 ),
 
                 ft.Container(height=40),
@@ -123,39 +119,41 @@ def screen_welcome(page):
                     alignment=ft.MainAxisAlignment.CENTER,
                     spacing=30,
                     controls=[
-                        _feature_card("🤟", "Señas"),
-                        _feature_card("🤖", "IA"),
-                        _feature_card("👥", "Comunidad"),
+                        _feature_card("🤟", "Signs"),
+                        _feature_card("🤖", "AI"),
+                        _feature_card("👥", "Community"),
                     ],
                 ),
             ],
         ),
     )
 
-    panel_derecho = ft.Container(
+    right_panel = ft.Container(
         expand=6,
-        bgcolor=BLANCO,
+        bgcolor=WHITE,
         padding=60,
 
         content=ft.Column(
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 
             controls=[
                 ft.Text(
-                    "Comunicación\naccesible para todos",
+                    "Accessible communication\nfor everyone",
                     size=40,
                     weight=ft.FontWeight.BOLD,
-                    color=AZUL_OSCURO,
+                    color=DARK_BLUE,
                     text_align=ft.TextAlign.CENTER,
                 ),
 
                 ft.Container(height=15),
 
                 ft.Text(
-                    "Aprende señas con IA, conecta con la comunidad y comunícate sin barreras.",
+                    "Learn sign language with AI, connect with the community, and communicate without barriers.",
                     size=18,
-                    color=GRIS_TEXTO,
+                    color=TEXT_GRAY,
                     width=500,
                     text_align=ft.TextAlign.CENTER,
                 ),
@@ -163,18 +161,18 @@ def screen_welcome(page):
                 ft.Container(height=40),
 
                 ft.ElevatedButton(
-                    "Crear cuenta gratis",
+                    "Create free account",
                     width=350,
                     height=55,
-                    bgcolor=TURQUESA,
-                    color=AZUL_OSCURO,
-                    on_click=lambda e: abrir_crear_cuenta(page),
+                    bgcolor=TURQUOISE,
+                    color=DARK_BLUE,
+                    on_click=lambda e: open_create_account(page),
                 ),
 
                 ft.Container(height=10),
 
                 ft.OutlinedButton(
-                    "Iniciar sesión",
+                    "Log in",
                     width=350,
                     height=55,
                     on_click=lambda e: page.go("/login"),
@@ -192,8 +190,8 @@ def screen_welcome(page):
                         ),
 
                         ft.Text(
-                            "O continúa con",
-                            color=GRIS_CLARO,
+                            "Or continue with",
+                            color=LIGHT_GRAY,
                         ),
 
                         ft.Container(
@@ -221,16 +219,16 @@ def screen_welcome(page):
                 ft.Text(
                     spans=[
                         ft.TextSpan(
-                            "Al continuar aceptas nuestros ",
+                            "By continuing you agree to our ",
                             style=ft.TextStyle(
-                                color=GRIS_CLARO,
+                                color=LIGHT_GRAY,
                             ),
                         ),
 
                         ft.TextSpan(
-                            "Términos de servicio",
+                            "Terms of Service",
                             style=ft.TextStyle(
-                                color=TURQUESA,
+                                color=TURQUOISE,
                             ),
                         ),
                     ],
@@ -240,22 +238,23 @@ def screen_welcome(page):
         ),
     )
 
-    vista = ft.Container(
+    view = ft.Container(
         expand=True,
-        bgcolor=GRIS_APP,
+        bgcolor=APP_GRAY,
         padding=20,
 
         content=ft.Row(
             expand=True,
             spacing=0,
             controls=[
-                panel_izquierdo,
-                panel_derecho,
+                left_panel,
+                right_panel,
             ],
         ),
     )
 
-    page.add(vista)
+    page.add(view)
+
 
 if __name__ == "__main__":
     ft.run(screen_welcome)

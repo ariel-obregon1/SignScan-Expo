@@ -1,11 +1,10 @@
 """
-Pantalla de traducción de lenguaje de señas (screens/translator.py).
+Sign language translation screen (screens/translator.py).
 
-El video de la cámara se muestra en su propia ventana de OpenCV, con
-la lógica de predict_lstm.py corriendo encima: detección de manos con
-MediaPipe + modelo LSTM + estabilización de la predicción. El texto
-reconocido también se refleja en vivo dentro del panel derecho de la
-app de Flet.
+The camera feed is shown in its own OpenCV window, with the
+predict_lstm.py logic running on top: hand detection with MediaPipe +
+LSTM model + prediction stabilization. The recognized text is also
+mirrored live inside the Flet app's right-hand panel.
 """
 
 import os
@@ -20,8 +19,8 @@ import flet as ft
 import numpy as np
 
 # ------------------------------------------------------------------
-# Hacer que "from hand_detector import ..." funcione sin importar
-# desde qué carpeta se ejecute la app (screens/ o main/).
+# Make "from hand_detector import ..." work regardless of which
+# folder the app is launched from (screens/ or main/).
 # ------------------------------------------------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
@@ -42,7 +41,7 @@ X_STD_PATH = os.path.join(PROJECT_ROOT, "X_std.npy")
 HAND_LANDMARKER_PATH = os.path.join(PROJECT_ROOT, "hand_landmarker.task")
 
 
-# ---- Paleta de colores ----
+# ---- Color palette ----
 COLOR_BG_DARK = "#001030"
 COLOR_CARD_BLUE = "#002060"
 COLOR_TURQUOISE = "#40E0D0"
@@ -57,9 +56,9 @@ COLOR_BACK_BTN_BG = ft.Colors.with_opacity(0.10, ft.Colors.WHITE)
 
 CONTENT_MAX_WIDTH = 1100
 CAMERA_INDEX = 0
-WINDOW_TITLE = "SignScan LSTM (Q: salir | R: re-sincronizar)"
+WINDOW_TITLE = "SignScan LSTM (Q: quit | R: re-sync)"
 
-# ---- Geometría estimada del recuadro de cámara ----
+# ---- Estimated geometry of the camera box ----
 HEADER_HEIGHT = 117
 MAIN_ROW_SIDE_PADDING = 40
 MAIN_ROW_BOTTOM_PADDING = 40
@@ -69,8 +68,8 @@ ACTIVAR_BTN_HEIGHT = 82
 ERROR_TEXT_RESERVED = 20
 LEFT_COLUMN_INNER_SPACING = 16
 
-# La app corre en full_screen (main.py), así que no hay barra de
-# título ni borde de ventana nativos que restar.
+# The app runs in full_screen mode (main.py), so there's no native
+# title bar or window border to subtract.
 TITLE_BAR_HEIGHT = 0
 WINDOW_BORDER = 0
 
@@ -134,9 +133,9 @@ def _get_model():
 
 
 class SignLanguageTranslator:
-    """Corre la cámara + detección de manos + modelo LSTM en un hilo
-    aparte, mostrando el video en su propia ventana de OpenCV y
-    reportando texto/predicciones a la UI de Flet vía callbacks."""
+    """Runs the camera + hand detection + LSTM model on a separate
+    thread, showing the video in its own OpenCV window and reporting
+    text/predictions back to the Flet UI via callbacks."""
 
     def __init__(self, on_started=None, on_stopped=None, on_error=None,
                  on_text_change=None, on_prediction_change=None, get_camera_rect=None):
@@ -190,13 +189,13 @@ class SignLanguageTranslator:
         try:
             _get_model()
         except Exception as ex:
-            self._fail(f"No se pudo cargar el modelo: {ex}")
+            self._fail(f"Could not load the model: {ex}")
             return
 
         try:
             self._detector = crear_detector(HAND_LANDMARKER_PATH)
         except Exception as ex:
-            self._fail(f"No se pudo cargar el detector de manos: {ex}")
+            self._fail(f"Could not load the hand detector: {ex}")
             return
 
         if platform.system() == "Windows":
@@ -206,7 +205,7 @@ class SignLanguageTranslator:
 
         if not self._cap.isOpened():
             self._cap = None
-            self._fail("No se pudo abrir la cámara. Revisa permisos o el índice de cámara.")
+            self._fail("Could not open the camera. Check permissions or the camera index.")
             return
 
         self._starting = False
@@ -220,7 +219,7 @@ class SignLanguageTranslator:
             import traceback
             traceback.print_exc()
             if self.on_error:
-                self.on_error(f"Error durante la traducción: {ex}")
+                self.on_error(f"Error during translation: {ex}")
         finally:
             if self._cap is not None:
                 self._cap.release()
@@ -391,16 +390,16 @@ class SignLanguageTranslator:
                                 (10, y_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
                     y_pos += 40
 
-            cv2.putText(frame, f"Dinamica: {pred_estable}", (10, 50),
+            cv2.putText(frame, f"Sign: {pred_estable}", (10, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
-            cv2.putText(frame, f"Confianza: {confianza:.2f}", (10, 100),
+            cv2.putText(frame, f"Confidence: {confianza:.2f}", (10, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
             texto_display = texto[-60:] if len(texto) > 60 else texto
-            cv2.putText(frame, f"Texto: {texto_display}", (10, 155),
+            cv2.putText(frame, f"Text: {texto_display}", (10, 155),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
             pct = int((manos_en_buffer / FRAMES_MODELO) * 100)
             color_barra = (0, 255, 0) if manos_en_buffer >= MIN_FRAMES_CON_MANOS else (0, 165, 255)
-            cv2.putText(frame, f"Buffer manos: {pct}%", (10, 210),
+            cv2.putText(frame, f"Hand buffer: {pct}%", (10, 210),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_barra, 2)
 
             cv2.imshow(WINDOW_TITLE, frame)
@@ -429,8 +428,8 @@ class SignLanguageTranslator:
 
 
 # ------------------------------------------------------------------
-# Registro global del traductor activo (para que main.py pueda
-# apagar la cámara al cambiar de pantalla o cerrar la app).
+# Global registry of the active translator (so main.py can turn the
+# camera off when switching screens or closing the app).
 # ------------------------------------------------------------------
 _active_translator = {"instance": None}
 
@@ -442,7 +441,7 @@ def stop_active_translator():
 
 
 def screen_translator(page: ft.Page):
-    page.title = "Escanear Señas"
+    page.title = "Scan Signs"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
@@ -467,8 +466,8 @@ def screen_translator(page: ft.Page):
             back_button,
             ft.Column(
                 controls=[
-                    ft.Text("Escanear Señas", size=26, weight=ft.FontWeight.NORMAL, color=ft.Colors.WHITE),
-                    ft.Text("IA detecta tu seña en tiempo real", size=15, color=COLOR_WHITE_TEXT),
+                    ft.Text("Scan Signs", size=26, weight=ft.FontWeight.NORMAL, color=ft.Colors.WHITE),
+                    ft.Text("AI detects your sign in real time", size=15, color=COLOR_WHITE_TEXT),
                 ],
                 spacing=2,
                 horizontal_alignment=ft.CrossAxisAlignment.START,
@@ -484,7 +483,7 @@ def screen_translator(page: ft.Page):
         width=float("inf"),
     )
 
-    # ---------- Recuadro de cámara (sólo diseño) ----------
+    # ---------- Camera box (design only) ----------
     camera_icon = ft.Container(
         content=ft.Icon(ft.Icons.CAMERA_ALT_OUTLINED, color=COLOR_TURQUOISE, size=26),
         width=56,
@@ -495,7 +494,7 @@ def screen_translator(page: ft.Page):
         alignment=ft.Alignment.CENTER,
     )
     camera_status_text = ft.Text(
-        "IA detecta tu seña en tiempo real",
+        "AI detects your sign in real time",
         size=18, color=ft.Colors.WHITE, text_align=ft.TextAlign.CENTER,
     )
     camera_card = ft.Container(
@@ -518,13 +517,13 @@ def screen_translator(page: ft.Page):
     camera_error_text = ft.Text("", size=14, color=COLOR_RED, text_align=ft.TextAlign.CENTER, visible=False)
 
     activar_btn_text = ft.Text(
-        "🎥 Iniciar Traducción", size=20, color=COLOR_CARD_BLUE,
+        "🎥 Start Translation", size=20, color=COLOR_CARD_BLUE,
         text_align=ft.TextAlign.CENTER, weight=ft.FontWeight.W_600,
     )
 
-    # ---------- Panel de traducción en vivo ----------
-    current_sign_text = ft.Text("Seña actual: —", size=18, color=ft.Colors.WHITE)
-    confidence_text = ft.Text("Confianza: 0%", size=15, color=COLOR_WHITE_TEXT)
+    # ---------- Live translation panel ----------
+    current_sign_text = ft.Text("Current sign: —", size=18, color=ft.Colors.WHITE)
+    confidence_text = ft.Text("Confidence: 0%", size=15, color=COLOR_WHITE_TEXT)
     recognized_text_display = ft.Text("", size=20, color=ft.Colors.WHITE, selectable=True)
     recognized_text_box = ft.Container(
         content=ft.Column(controls=[recognized_text_display], scroll=ft.ScrollMode.AUTO, expand=True),
@@ -542,11 +541,11 @@ def screen_translator(page: ft.Page):
     translation_card = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Text("🗣️ Traducción en vivo", size=18, color=COLOR_GOLD),
+                ft.Text("🗣️ Live Translation", size=18, color=COLOR_GOLD),
                 current_sign_text,
                 confidence_text,
                 recognized_text_box,
-                ft.TextButton("Limpiar texto", on_click=clear_translation_text),
+                ft.TextButton("Clear text", on_click=clear_translation_text),
             ],
             spacing=12,
             expand=True,
@@ -559,14 +558,14 @@ def screen_translator(page: ft.Page):
     )
 
     tips_items = [
-        "• Coloca tu mano dentro del recuadro turquesa",
-        "• Asegúrate de tener buena iluminación",
-        "• Mantén la seña por 2–3 segundos",
+        "• Place your hand inside the turquoise frame",
+        "• Make sure you have good lighting",
+        "• Hold the sign for 2-3 seconds",
     ]
     tips_card = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Text("💡 Consejos para mejores resultados", size=16, color=COLOR_GOLD),
+                ft.Text("💡 Tips for better results", size=16, color=COLOR_GOLD),
                 ft.Column(
                     controls=[ft.Text(t, size=15, color=ft.Colors.WHITE) for t in tips_items],
                     spacing=10,
@@ -588,25 +587,25 @@ def screen_translator(page: ft.Page):
     )
 
     def set_idle_state():
-        activar_btn_text.value = "🎥 Iniciar Traducción"
+        activar_btn_text.value = "🎥 Start Translation"
         activar_btn.bgcolor = COLOR_TURQUOISE
-        camera_status_text.value = "IA detecta tu seña en tiempo real"
+        camera_status_text.value = "AI detects your sign in real time"
         activar_btn_text.update()
         activar_btn.update()
         camera_status_text.update()
 
     def set_loading_state():
-        activar_btn_text.value = "⏳ Cargando modelo..."
+        activar_btn_text.value = "⏳ Loading model..."
         activar_btn.bgcolor = ft.Colors.with_opacity(0.5, COLOR_TURQUOISE)
-        camera_status_text.value = "Cargando modelo, un momento..."
+        camera_status_text.value = "Loading model, one moment..."
         activar_btn_text.update()
         activar_btn.update()
         camera_status_text.update()
 
     def set_active_state():
-        activar_btn_text.value = "⏹ Detener Traducción"
+        activar_btn_text.value = "⏹ Stop Translation"
         activar_btn.bgcolor = COLOR_RED
-        camera_status_text.value = "Traducción activa en una ventana aparte"
+        camera_status_text.value = "Translation active in a separate window"
         activar_btn_text.update()
         activar_btn.update()
         camera_status_text.update()
@@ -622,8 +621,8 @@ def screen_translator(page: ft.Page):
         recognized_text_display.update()
 
     def handle_prediction_change(pred_estable: str, confianza: float):
-        current_sign_text.value = f"Seña actual: {pred_estable or '—'}"
-        confidence_text.value = f"Confianza: {int(confianza * 100)}%"
+        current_sign_text.value = f"Current sign: {pred_estable or '—'}"
+        confidence_text.value = f"Confidence: {int(confianza * 100)}%"
         current_sign_text.update()
         confidence_text.update()
 
@@ -700,9 +699,16 @@ def screen_translator(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        page.window.width = 1280
-        page.window.height = 820
-        page.run_task(page.window.center)
+        # This screen intentionally keeps a fixed max-width card
+        # centered on the screen (see CONTENT_MAX_WIDTH and
+        # compute_camera_screen_rect, which position the OpenCV
+        # window relative to it) - so we still maximize the window
+        # like the rest of the app, but the card itself won't stretch
+        # edge-to-edge by design.
+        page.window.maximized = True
+        page.window.min_width = 1100
+        page.window.min_height = 700
+        page.update()
         screen_translator(page)
 
     ft.run(_standalone)

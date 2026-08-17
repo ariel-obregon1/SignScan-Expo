@@ -7,15 +7,14 @@ from screens.sign_up import screen_signup
 from screens.sign_in import screen_signin
 from screens.personalize_profile import screen_personalizeprofile
 from screens.dashboard import screen_dashboard
-from screens.translator import screen_translator, stop_active_translator
+#from screens.translator import screen_translator, stop_active_translator
 
 ROUTES = {
     "/": screen_welcome,
-    "/crear-cuenta": screen_signup,
+    "/create-account": screen_signup,
     "/login": screen_signin,
-    "/perfil": screen_personalizeprofile,
-    "/dashboard": screen_dashboard,
-    "/escanear": screen_translator,
+    "/profile": screen_personalizeprofile,
+    "/dashboard": screen_dashboard
 }
 
 
@@ -29,10 +28,10 @@ def main(page: ft.Page):
     page.assets_dir = "assets"
 
     def route_change(e: ft.RouteChangeEvent):
-        # Por si veníamos de la pantalla de traducción: apaga la cámara
-        # antes de cambiar de pantalla. No hace nada si no estaba
-        # corriendo, así que es seguro llamarlo en cada cambio de ruta.
-        stop_active_translator()
+        # In case we were on the translation screen: turn off the
+        # camera before switching screens. It's a no-op if nothing was
+        # running, so it's safe to call on every route change.
+        #stop_active_translator()
 
         page.controls.clear()
         handler = ROUTES.get(page.route, screen_welcome)
@@ -41,7 +40,7 @@ def main(page: ft.Page):
 
     def window_event(e: ft.WindowEvent):
         if e.type == ft.WindowEventType.CLOSE:
-            stop_active_translator()
+            #stop_active_translator()
             page.run_task(page.window.destroy)
 
     page.window.prevent_close = True
