@@ -541,7 +541,7 @@ def screen_translator(page: ft.Page):
     translation_card = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Text("🗣️ Live Translation", size=18, color=COLOR_GOLD),
+                ft.Text("🗣️ Live Translation", size=24, color=COLOR_GOLD),
                 current_sign_text,
                 confidence_text,
                 recognized_text_box,
@@ -554,6 +554,7 @@ def screen_translator(page: ft.Page):
         bgcolor=COLOR_TIPS_BG,
         border=ft.Border.all(0.9, COLOR_TIPS_BORDER),
         border_radius=20,
+        width=3000,
         expand=3,
     )
 
@@ -567,17 +568,18 @@ def screen_translator(page: ft.Page):
             controls=[
                 ft.Text("💡 Tips for better results", size=16, color=COLOR_GOLD),
                 ft.Column(
-                    controls=[ft.Text(t, size=15, color=ft.Colors.WHITE) for t in tips_items],
+                    controls=[ft.Text(t, size=16, color=ft.Colors.WHITE) for t in tips_items],
                     spacing=10,
                 ),
             ],
             spacing=15,
         ),
-        padding=25,
+        padding=15,
         bgcolor=COLOR_TIPS_BG,
         border=ft.Border.all(0.9, COLOR_TIPS_BORDER),
         border_radius=20,
         expand=1,
+        width=3000,
     )
 
     right_column = ft.Column(

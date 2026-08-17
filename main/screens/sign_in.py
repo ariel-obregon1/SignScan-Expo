@@ -52,15 +52,18 @@ def screen_signin(page: ft.Page):
     # LEFT PANEL — Branding (kept distinct: navy gradient)
     # ================================================================
     brand_logo = ft.Container(
-        content=ft.Text("🤟", size=40),
-        width=90,
-        height=90,
+        content=ft.Image(
+            src="logo.png",
+            width=170,
+        ),
+        width=170,
+        height=170,
         bgcolor=WHITE,
         border_radius=20,
         alignment=ft.Alignment.CENTER,
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=25,
                              color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK), offset=ft.Offset(0, 8)),
-    )
+        )
 
     left_panel = ft.Container(
         expand=LEFT_PANEL_WEIGHT,

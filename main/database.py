@@ -48,6 +48,7 @@ def init_db():
                 password_hash TEXT NOT NULL,
                 salt TEXT NOT NULL,
                 avatar TEXT NOT NULL DEFAULT '🌟',
+                photo TEXT,
                 created_at TEXT NOT NULL
             )
             """
@@ -158,13 +159,18 @@ def authenticate_user(email: str, password: str) -> tuple[bool, str, dict | None
     return True, "Welcome back", user
 
 
-def update_profile(user_id: int, name: str | None = None, avatar: str | None = None):
+def update_profile(user_id: int, name: str | None = None, avatar: str | None = None, photo: str | None = None,):
     conn = get_connection()
     try:
         if name is not None:
             conn.execute("UPDATE users SET name = ? WHERE id = ?", (name.strip(), user_id))
         if avatar is not None:
             conn.execute("UPDATE users SET avatar = ? WHERE id = ?", (avatar, user_id))
+        if photo is not None:
+            conn.execute(
+                "UPDATE users SET photo=? WHERE id=?",
+                (photo, user_id)
+            )
         conn.commit()
     finally:
         conn.close()

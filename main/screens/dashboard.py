@@ -56,7 +56,18 @@ def screen_dashboard(page: ft.Page):
     user_name = session.current_user.get("name") or "User"
     user_email = session.current_user.get("email") or ""
     user_avatar = session.current_user.get("avatar") or "🌟"
+    user_photo = session.current_user.get("photo")
+    print("PHOTO =", user_photo)
+    def build_user_avatar():
+        if user_photo:
+            return ft.Image(
+                src=user_photo,
+                width=44,
+                height=44,
+                fit=ft.BoxFit.COVER,
+            )
 
+        return ft.Text(user_avatar, size=16)
     # ================================================================
     # SIDEBAR
     # ================================================================
@@ -109,13 +120,14 @@ def screen_dashboard(page: ft.Page):
         content=ft.Row(
             controls=[
                 ft.Container(
-                    content=ft.Text(user_avatar, size=16),
+                    content=build_user_avatar(),
                     width=44,
                     height=44,
                     bgcolor=COLOR_SIDEBAR_DARKER,
                     border=ft.Border.all(1.8, COLOR_TURQUOISE),
                     border_radius=999,
                     alignment=ft.Alignment.CENTER,
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
                 ),
                 ft.Column(
                     controls=[

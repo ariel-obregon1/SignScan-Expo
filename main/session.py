@@ -12,6 +12,7 @@ current_user = {
     "name": None,
     "email": None,
     "avatar": "🌟",
+    "photo": None
 }
 
 
@@ -20,6 +21,7 @@ def set_current_user(user: dict):
     current_user["name"] = user["name"]
     current_user["email"] = user["email"]
     current_user["avatar"] = user.get("avatar") or "🌟"
+    current_user["photo"] = user.get("photo")
 
 
 def clear_current_user():
@@ -27,6 +29,7 @@ def clear_current_user():
     current_user["name"] = None
     current_user["email"] = None
     current_user["avatar"] = "🌟"
+    current_user["photo"] = None
 
 
 def is_logged_in() -> bool:
