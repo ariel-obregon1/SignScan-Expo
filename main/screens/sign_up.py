@@ -14,34 +14,42 @@ import session  # noqa: E402
 
 
 # =========================
-# COLORES
+# COLORS
 # =========================
 
-AZUL_OSCURO = "#001845"
-AZUL_PRINCIPAL = "#002060"
-TURQUESA = "#40E0D0"
+DARK_BLUE = "#001845"
+MAIN_BLUE = "#002060"
+TURQUOISE = "#40E0D0"
 
-GRIS_APP = "#E5E7EB"
-GRIS_TEXTO = "#6B7A99"
-GRIS_CLARO = "#9BA8BF"
-ROJO_ERROR = "#DC2626"
+APP_GRAY = "#E5E7EB"
+TEXT_GRAY = "#6B7A99"
+LIGHT_GRAY = "#9BA8BF"
+ERROR_RED = "#DC2626"
 
-BLANCO = "#FFFFFF"
+WHITE = "#FFFFFF"
 
 
 # =========================
-# NAVEGACIÓN
+# NAVIGATION
 # =========================
 
-def volver_inicio(page):
+def go_back_home(page):
     page.go("/")
 
 
 # =========================
-# SCREEN CREAR CUENTA
+# CREATE ACCOUNT SCREEN
 # =========================
 
 def screen_signup(page):
+
+    page.title = "SignScan - Create account"
+    page.bgcolor = ft.Colors.GREY_300
+    page.padding = 0
+    page.fonts = {
+        "Nunito": "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/Nunito%5Bwght%5D.ttf"
+    }
+    page.theme = ft.Theme(font_family="Nunito")
 
     page.controls.clear()
 
@@ -49,54 +57,54 @@ def screen_signup(page):
     # INPUTS
     # =========================
 
-    estilo_input = {
+    input_style = {
         "width": 420,
         "height": 52,
         "filled": True,
-        "bgcolor": BLANCO,
+        "bgcolor": WHITE,
         "border_color": "#CBD5E1",
-        "focused_border_color": TURQUESA,
+        "focused_border_color": TURQUOISE,
         "color": "#0F172A",
         "text_size": 15,
         "border_radius": 14,
     }
 
-    nombre = ft.TextField(
-        label="Nombre completo",
-        hint_text="Ingresa tu nombre",
-        **estilo_input
+    full_name = ft.TextField(
+        label="Full name",
+        hint_text="Enter your name",
+        **input_style
     )
 
-    correo = ft.TextField(
-        label="Correo electrónico",
-        hint_text="ejemplo@email.com",
-        **estilo_input
+    email = ft.TextField(
+        label="Email address",
+        hint_text="example@email.com",
+        **input_style
     )
 
     password = ft.TextField(
-        label="Contraseña",
-        hint_text="Mínimo 8 caracteres",
+        label="Password",
+        hint_text="At least 8 characters",
         password=True,
         can_reveal_password=True,
-        **estilo_input
+        **input_style
     )
 
-    confirmar = ft.TextField(
-        label="Confirmar contraseña",
-        hint_text="Repite tu contraseña",
+    confirm_password = ft.TextField(
+        label="Confirm password",
+        hint_text="Repeat your password",
         password=True,
         can_reveal_password=True,
-        **estilo_input
+        **input_style
     )
 
-    error_text = ft.Text("", size=13, color=ROJO_ERROR, visible=False, text_align=ft.TextAlign.CENTER)
+    error_text = ft.Text("", size=13, color=ERROR_RED, visible=False, text_align=ft.TextAlign.CENTER)
 
     # =========================
-    # VALIDACIÓN + REGISTRO
+    # VALIDATION + REGISTRATION
     # =========================
 
-    def mostrar_error(mensaje: str):
-        error_text.value = mensaje
+    def show_error(message: str):
+        error_text.value = message
         error_text.visible = True
         error_text.update()
 
@@ -104,39 +112,39 @@ def screen_signup(page):
         error_text.visible = False
         error_text.update()
 
-        if password.value != confirmar.value:
-            mostrar_error("Las contraseñas no coinciden")
+        if password.value != confirm_password.value:
+            show_error("Passwords do not match")
             return
 
-        ok, mensaje, user = database.create_user(nombre.value, correo.value, password.value)
+        ok, message, user = database.create_user(full_name.value, email.value, password.value)
         if not ok:
-            mostrar_error(mensaje)
+            show_error(message)
             return
 
         session.set_current_user(user)
-        page.go("/perfil")
+        page.go("/profile")
 
     # =========================
-    # PANEL IZQUIERDO
+    # LEFT PANEL
     # =========================
 
-    panel_izquierdo = ft.Container(
+    left_panel = ft.Container(
 
         expand=4,
-        bgcolor=AZUL_PRINCIPAL,
+        bgcolor=MAIN_BLUE,
         padding=40,
 
         content=ft.Column(
-
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 
             controls=[
 
-
                 ft.Container(
 
-                    bgcolor=BLANCO,
+                    bgcolor=WHITE,
                     border_radius=25,
                     padding=20,
 
@@ -151,49 +159,38 @@ def screen_signup(page):
                     ),
                 ),
 
-
-
                 ft.Container(height=15),
-
-
 
                 ft.Text(
                     "SignScan",
                     size=42,
-                    weight="bold",
-                    color=BLANCO,
+                    weight=ft.FontWeight.BOLD,
+                    color=WHITE,
                 ),
-
-
 
                 ft.Container(height=10),
 
-
-
                 ft.Text(
-                    "Comunicación accesible para todos",
+                    "Accessible communication for everyone",
                     size=18,
-                    color=TURQUESA,
-                    text_align="center",
+                    color=TURQUOISE,
+                    text_align=ft.TextAlign.CENTER,
                 ),
 
             ]
         )
     )
 
-
-
     # =========================
-    # BOTONES REDES
+    # SOCIAL BUTTONS
     # =========================
 
-    redes = ft.Row(
+    social_buttons = ft.Row(
 
         alignment=ft.MainAxisAlignment.CENTER,
         spacing=15,
 
         controls=[
-
 
             ft.Container(
                 width=65,
@@ -211,10 +208,8 @@ def screen_signup(page):
                     size=24,
                 ),
 
-                alignment=ft.Alignment(0, 0),
+                alignment=ft.Alignment.CENTER,
             ),
-
-
 
             ft.Container(
                 width=65,
@@ -232,10 +227,8 @@ def screen_signup(page):
                     size=22,
                 ),
 
-                alignment=ft.Alignment(0, 0),
+                alignment=ft.Alignment.CENTER,
             ),
-
-
 
             ft.Container(
                 width=65,
@@ -253,26 +246,21 @@ def screen_signup(page):
                     size=26,
                 ),
 
-                alignment=ft.Alignment(0, 0),
+                alignment=ft.Alignment.CENTER,
             ),
 
         ]
     )
 
-
-
     # =========================
-    # FORMULARIO
+    # FORM
     # =========================
 
-    formulario = ft.Column(
-        expand=True,
-        scroll=ft.ScrollMode.AUTO,
+    form = ft.Column(
+
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 
         controls=[
-
-
 
             ft.Row(
 
@@ -281,43 +269,31 @@ def screen_signup(page):
                 controls=[
 
                     ft.TextButton(
-                        "< Volver",
-                        on_click=lambda e: volver_inicio(page)
+                        "< Back",
+                        on_click=lambda e: go_back_home(page)
                     )
 
                 ]
             ),
 
-
-
             ft.Text(
-                "Crear cuenta",
+                "Create account",
                 size=32,
-                weight="bold",
+                weight=ft.FontWeight.BOLD,
                 color="#0F172A",
             ),
 
-
-
             ft.Text(
-                "Únete a la comunidad SignScan",
+                "Join the SignScan community",
                 size=16,
-                color=GRIS_TEXTO,
+                color=TEXT_GRAY,
             ),
 
-
-
             ft.Container(height=15),
 
-
-
-            redes,
-
-
+            social_buttons,
 
             ft.Container(height=15),
-
-
 
             ft.Row(
 
@@ -325,22 +301,17 @@ def screen_signup(page):
 
                 controls=[
 
-
                     ft.Container(
                         width=130,
                         height=1,
                         bgcolor="#E5E7EB",
                     ),
 
-
-
                     ft.Text(
-                        "O con email",
+                        "Or with email",
                         size=13,
-                        color=GRIS_CLARO,
+                        color=LIGHT_GRAY,
                     ),
-
-
 
                     ft.Container(
                         width=130,
@@ -351,32 +322,21 @@ def screen_signup(page):
                 ]
             ),
 
-
-
             ft.Container(height=15),
 
-
-
-            nombre,
-
+            full_name,
 
             ft.Container(height=8),
 
-
-            correo,
-
+            email,
 
             ft.Container(height=8),
-
 
             password,
 
-
             ft.Container(height=8),
 
-
-            confirmar,
-
+            confirm_password,
 
             ft.Container(height=10),
 
@@ -384,27 +344,21 @@ def screen_signup(page):
 
             ft.Container(height=5),
 
-
-
             ft.ElevatedButton(
 
-                "Crear cuenta",
+                "Create account",
 
                 width=420,
                 height=58,
 
-                bgcolor=TURQUESA,
-                color=AZUL_OSCURO,
+                bgcolor=TURQUOISE,
+                color=DARK_BLUE,
 
                 on_click=handle_signup,
 
             ),
 
-
-
             ft.Container(height=15),
-
-
 
             ft.Row(
 
@@ -412,17 +366,14 @@ def screen_signup(page):
 
                 controls=[
 
-
                     ft.Text(
-                        "¿Ya tienes cuenta?",
-                        color=GRIS_TEXTO,
+                        "Already have an account?",
+                        color=TEXT_GRAY,
                     ),
-
-
 
                     ft.TextButton(
 
-                        "Iniciar sesión",
+                        "Log in",
 
                         on_click=lambda e: page.go("/login"),
 
@@ -434,31 +385,29 @@ def screen_signup(page):
         ]
     )
 
-
-
     # =========================
-    # PANEL DERECHO
+    # RIGHT PANEL
     # =========================
 
-    panel_derecho = ft.Container(
+    right_panel = ft.Container(
 
         expand=6,
         bgcolor="#F1F5F9",
 
         content=ft.Column(
-
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 
             controls=[
-
 
                 ft.Container(
 
                     width=520,
                     padding=30,
 
-                    bgcolor=BLANCO,
+                    bgcolor=WHITE,
                     border_radius=25,
 
                     shadow=ft.BoxShadow(
@@ -466,7 +415,7 @@ def screen_signup(page):
                         color="#22000000",
                     ),
 
-                    content=formulario,
+                    content=form,
 
                 )
 
@@ -474,20 +423,17 @@ def screen_signup(page):
         )
     )
 
-
-
     # =========================
-    # VISTA FINAL
+    # FINAL VIEW
     # =========================
 
-    vista = ft.Container(
+    view = ft.Container(
 
         expand=True,
 
-        bgcolor=GRIS_APP,
+        bgcolor=APP_GRAY,
 
         padding=20,
-
 
         content=ft.Row(
 
@@ -495,22 +441,28 @@ def screen_signup(page):
 
             spacing=0,
 
-
             controls=[
 
-                panel_izquierdo,
-                panel_derecho,
+                left_panel,
+                right_panel,
 
             ]
 
         )
     )
 
-
-
-    page.add(vista)
+    page.add(view)
     page.update()
 
 
 if __name__ == "__main__":
-    ft.run(screen_signup)
+    def _standalone(page: ft.Page):
+        # Make the window occupy the full computer screen, matching the
+        # rest of the app's screens.
+        page.window.maximized = True
+        page.window.min_width = 1000
+        page.window.min_height = 700
+        page.update()
+        screen_signup(page)
+
+    ft.run(_standalone)

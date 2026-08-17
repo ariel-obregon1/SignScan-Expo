@@ -1,9 +1,9 @@
 """
-Pantalla de inicio / dashboard (screens/dashboard.py).
+Home / dashboard screen (screens/dashboard.py).
 
-Sidebar de navegación + saludo + tarjetas de racha/progreso + grid de
-módulos. Muestra el nombre/correo/avatar del usuario logueado
-(session.current_user) en vez de datos de ejemplo.
+Navigation sidebar + greeting + streak/progress cards + module grid.
+Shows the logged-in user's name/email/avatar (session.current_user)
+instead of placeholder data.
 """
 
 import os
@@ -17,7 +17,7 @@ if PROJECT_ROOT not in sys.path:
 
 import session  # noqa: E402
 
-# ---- Paleta de colores ----
+# ---- Colors ----
 COLOR_SIDEBAR = "#002060"
 COLOR_SIDEBAR_DARKER = "#001845"
 COLOR_BG_MAIN = "#EEF2F7"
@@ -36,7 +36,7 @@ SIDEBAR_WIDTH = 260
 
 
 def screen_dashboard(page: ft.Page):
-    page.title = "SignScan - Inicio"
+    page.title = "SignScan - Home"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
     page.fonts = {
@@ -44,7 +44,7 @@ def screen_dashboard(page: ft.Page):
     }
     page.theme = ft.Theme(font_family="Nunito")
 
-    user_name = session.current_user.get("name") or "Usuario"
+    user_name = session.current_user.get("name") or "User"
     user_email = session.current_user.get("email") or ""
     user_avatar = session.current_user.get("avatar") or "🌟"
 
@@ -127,12 +127,12 @@ def screen_dashboard(page: ft.Page):
 
     nav_column = ft.Column(
         controls=[
-            nav_button(ft.Icons.HOME_ROUNDED, "Inicio", active=True),
-            nav_button(ft.Icons.MENU_BOOK_ROUNDED, "Aprender", route="/aprender"),
-            nav_button(ft.Icons.CAMERA_ALT_ROUNDED, "Escanear", route="/escanear"),
-            nav_button(ft.Icons.GROUPS_ROUNDED, "Comunidad", route="/comunidad"),
+            nav_button(ft.Icons.HOME_ROUNDED, "Home", active=True),
+            nav_button(ft.Icons.MENU_BOOK_ROUNDED, "Learn", route="/learn"),
+            nav_button(ft.Icons.CAMERA_ALT_ROUNDED, "Scan", route="/scan"),
+            nav_button(ft.Icons.GROUPS_ROUNDED, "Community", route="/community"),
             nav_button(ft.Icons.VIDEOCAM_ROUNDED, "Video", route="/video"),
-            nav_button(ft.Icons.PERSON_ROUNDED, "Perfil", route="/perfil"),
+            nav_button(ft.Icons.PERSON_ROUNDED, "Profile", route="/profile"),
         ],
         spacing=0,
     )
@@ -146,7 +146,7 @@ def screen_dashboard(page: ft.Page):
         content=ft.Row(
             controls=[
                 ft.Icon(ft.Icons.LOGOUT_ROUNDED, size=18, color=ft.Colors.WHITE),
-                ft.Text("Cerrar sesión", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                ft.Text("Log out", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
             ],
             spacing=15,
         ),
@@ -168,21 +168,22 @@ def screen_dashboard(page: ft.Page):
             ],
             spacing=0,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         ),
         width=SIDEBAR_WIDTH,
         bgcolor=COLOR_SIDEBAR,
     )
 
     # ================================================================
-    # MAIN CONTENT — Header (saludo + racha)
+    # MAIN CONTENT — Header (greeting + streak)
     # ================================================================
     greeting_header = ft.Container(
         content=ft.Row(
             controls=[
                 ft.Column(
                     controls=[
-                        ft.Text(f"Hola, {user_name}! 👋", size=30, color=COLOR_NAVY_TEXT),
-                        ft.Text("Continúa aprendiendo hoy", size=17.5, color=COLOR_GRAY_TEXT),
+                        ft.Text(f"Hi, {user_name}! 👋", size=30, color=COLOR_NAVY_TEXT),
+                        ft.Text("Keep learning today", size=17.5, color=COLOR_GRAY_TEXT),
                     ],
                     spacing=3,
                 ),
@@ -210,7 +211,7 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # Tarjetas de estadísticas
+    # Stat cards
     # ================================================================
     def stat_card(emoji: str, value: str, label: str):
         return ft.Container(
@@ -233,15 +234,15 @@ def screen_dashboard(page: ft.Page):
 
     stats_row = ft.Row(
         controls=[
-            stat_card("🔥", "1", "días activo"),
-            stat_card("🤟", "0", "aprendidas"),
-            stat_card("⭐", "Básico", "nivel"),
+            stat_card("🔥", "1", "day streak"),
+            stat_card("🤟", "0", "signs learned"),
+            stat_card("⭐", "Basic", "level"),
         ],
         spacing=20,
     )
 
     # ================================================================
-    # Marcador general (barra de progreso grande)
+    # Overall progress bar
     # ================================================================
     def simple_progress_bar(percent: int, color: str, height: int = 8):
         filled = max(percent, 0)
@@ -258,7 +259,7 @@ def screen_dashboard(page: ft.Page):
             height=height,
         )
 
-    marcador_card = ft.Container(
+    scoreboard_card = ft.Container(
         content=ft.Column(
             controls=[
                 ft.Row(
@@ -273,7 +274,7 @@ def screen_dashboard(page: ft.Page):
                                     border_radius=999,
                                     alignment=ft.Alignment.CENTER,
                                 ),
-                                ft.Text("Marcador", size=17.5, color=COLOR_NAVY_TEXT),
+                                ft.Text("Scoreboard", size=17.5, color=COLOR_NAVY_TEXT),
                             ],
                             spacing=15,
                         ),
@@ -343,15 +344,15 @@ def screen_dashboard(page: ft.Page):
             expand=True,
         )
 
-    basico_section = ft.Column(
+    basic_section = ft.Column(
         controls=[
-            category_label("🌱 BÁSICO"),
+            category_label("🌱 BASIC"),
             ft.Column(
                 controls=[
-                    topic_row("🔤", "Abecedario", 0, COLOR_TURQUOISE),
-                    topic_row("👋", "Saludos", 0, COLOR_TURQUOISE),
-                    topic_row("🔢", "Números", 0, COLOR_TURQUOISE),
-                    topic_row("🎨", "Colores", 0, COLOR_TURQUOISE),
+                    topic_row("🔤", "Alphabet", 0, COLOR_TURQUOISE),
+                    topic_row("👋", "Greetings", 0, COLOR_TURQUOISE),
+                    topic_row("🔢", "Numbers", 0, COLOR_TURQUOISE),
+                    topic_row("🎨", "Colors", 0, COLOR_TURQUOISE),
                 ],
                 spacing=10,
             ),
@@ -359,13 +360,13 @@ def screen_dashboard(page: ft.Page):
         spacing=10,
     )
 
-    intermedio_section = ft.Column(
+    intermediate_section = ft.Column(
         controls=[
-            category_label("🚀 INTERMEDIO"),
+            category_label("🚀 INTERMEDIATE"),
             ft.Column(
                 controls=[
-                    topic_row("👨‍👩‍👧", "Familia", 0, COLOR_PURPLE),
-                    topic_row("🍎", "Comida", 0, COLOR_PURPLE),
+                    topic_row("👨‍👩‍👧", "Family", 0, COLOR_PURPLE),
+                    topic_row("🍎", "Food", 0, COLOR_PURPLE),
                 ],
                 spacing=10,
             ),
@@ -373,14 +374,14 @@ def screen_dashboard(page: ft.Page):
         spacing=10,
     )
 
-    dificil_section = ft.Column(
+    advanced_section = ft.Column(
         controls=[
-            category_label("🔥 DIFÍCIL"),
+            category_label("🔥 ADVANCED"),
             ft.Row(
                 controls=[
-                    topic_row_stacked("😊", "Emociones", 0, COLOR_RED),
-                    topic_row_stacked("🐾", "Animales", 0, COLOR_RED),
-                    topic_row_stacked("🏅", "Deportes", 0, COLOR_RED),
+                    topic_row_stacked("😊", "Emotions", 0, COLOR_RED),
+                    topic_row_stacked("🐾", "Animals", 0, COLOR_RED),
+                    topic_row_stacked("🏅", "Sports", 0, COLOR_RED),
                 ],
                 spacing=15,
             ),
@@ -390,14 +391,14 @@ def screen_dashboard(page: ft.Page):
 
     progress_card = ft.Container(
         content=ft.Column(
-            controls=[marcador_card, basico_section, intermedio_section, dificil_section],
+            controls=[scoreboard_card, basic_section, intermediate_section, advanced_section],
             spacing=25,
         ),
         padding=ft.Padding.only(top=25),
     )
 
     # ================================================================
-    # Módulos
+    # Modules
     # ================================================================
     def module_card(emoji: str, title: str, subtitle: str, bgcolor, text_color, route: str | None = None):
         return ft.Container(
@@ -426,22 +427,22 @@ def screen_dashboard(page: ft.Page):
             on_click=(lambda e: page.go(route)) if route else None,
         )
 
-    modulos_grid = ft.Column(
+    modules_grid = ft.Column(
         controls=[
             ft.Row(
                 controls=[
-                    module_card("📷", "Escanear Señas", "Detecta señas en tiempo real con IA",
-                                COLOR_TURQUOISE, COLOR_NAVY_TEXT, route="/escanear"),
-                    module_card("📹", "Video Chat", "Videollamadas con interpretación",
+                    module_card("📷", "Scan Signs", "Detect signs in real time with AI",
+                                COLOR_TURQUOISE, COLOR_NAVY_TEXT, route="/scan"),
+                    module_card("📹", "Video Chat", "Video calls with interpretation",
                                 COLOR_SIDEBAR, ft.Colors.WHITE),
                 ],
                 spacing=15,
             ),
             ft.Row(
                 controls=[
-                    module_card("📖", "Aprender Señas", "Lecciones interactivas de señas",
+                    module_card("📖", "Learn Signs", "Interactive sign language lessons",
                                 COLOR_GOLD, COLOR_NAVY_TEXT),
-                    module_card("👥", "Comunidad", "Conecta con personas sordas",
+                    module_card("👥", "Community", "Connect with deaf people",
                                 ft.Colors.WHITE, COLOR_NAVY_TEXT),
                 ],
                 spacing=15,
@@ -450,11 +451,11 @@ def screen_dashboard(page: ft.Page):
         spacing=15,
     )
 
-    modulos_section = ft.Container(
+    modules_section = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Text("Módulos", size=22.5, color=COLOR_NAVY_TEXT),
-                ft.Container(content=modulos_grid, padding=ft.Padding.only(top=15)),
+                ft.Text("Modules", size=22.5, color=COLOR_NAVY_TEXT),
+                ft.Container(content=modules_grid, padding=ft.Padding.only(top=15)),
             ],
             spacing=0,
         ),
@@ -463,7 +464,7 @@ def screen_dashboard(page: ft.Page):
 
     body_content = ft.Container(
         content=ft.Column(
-            controls=[stats_row, progress_card, modulos_section],
+            controls=[stats_row, progress_card, modules_section],
             spacing=0,
             scroll=ft.ScrollMode.AUTO,
             expand=True,
@@ -493,9 +494,12 @@ def screen_dashboard(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        page.window.width = 1440
-        page.window.height = 900
-        page.run_task(page.window.center)
+        # Make the window occupy the full computer screen, matching the
+        # rest of the app's screens.
+        page.window.maximized = True
+        page.window.min_width = 1100
+        page.window.min_height = 700
+        page.update()
         screen_dashboard(page)
 
     ft.run(_standalone)

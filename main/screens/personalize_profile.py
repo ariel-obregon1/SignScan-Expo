@@ -1,22 +1,32 @@
 """
-Pantalla de configuración de perfil (screens/profile_setup_screen.py).
+Profile setup screen (screens/personalize_profile.py).
 
-Tarjeta blanca centrada sobre fondo navy: foto/avatar con botón de
-cámara superpuesto, campo de nombre de usuario, grilla de avatares de
-emoji seleccionables, y botón "Guardar y continuar".
+White card centered over a navy background: avatar with a camera
+button overlay, username field, selectable emoji avatar grid, and a
+"Save and continue" button. Reads/writes session.current_user.
 """
+
+import os
+import sys
 
 import flet as ft
 
-# ---- Paleta de colores (tomada del CSS) ----
-COLOR_BG_NAVY = "#002060"          # rgba(0, 32, 96, 1)
-COLOR_TURQUOISE = "#40E0D0"
-COLOR_GOLD = "#FFD700"
-COLOR_NAVY_TEXT = "#002060"
-COLOR_GRAY_TEXT = "#6B7A99"        # rgba(107, 122, 153, 1)
-COLOR_WHITE_TEXT = ft.Colors.with_opacity(0.6, ft.Colors.WHITE)
-COLOR_INPUT_BORDER = "#E5E7EB"     # rgba(229, 231, 235, 1)
-COLOR_AVATAR_BG = "#F9FAFB"        # rgba(249, 250, 251, 1)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+import database  # noqa: E402
+import session  # noqa: E402
+
+# ---- Colors ----
+NAVY_BG = "#002060"
+TURQUOISE = "#40E0D0"
+GOLD = "#FFD700"
+NAVY_TEXT = "#002060"
+TEXT_GRAY = "#6B7A99"
+WHITE_TEXT = ft.Colors.with_opacity(0.6, ft.Colors.WHITE)
+INPUT_BORDER = "#E5E7EB"
+AVATAR_BG = "#F9FAFB"
 
 AVATAR_EMOJIS = [
     "🤟", "👋", "🙌", "👏", "🤲", "🌟", "🦋", "🌈", "🐬", "🦁",
@@ -25,7 +35,7 @@ AVATAR_EMOJIS = [
 
 
 def screen_personalizeprofile(page: ft.Page):
-    page.title = "SignScan - Tu perfil"
+    page.title = "SignScan - Your profile"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
     page.fonts = {
@@ -33,19 +43,48 @@ def screen_personalizeprofile(page: ft.Page):
     }
     page.theme = ft.Theme(font_family="Nunito")
 
-    page.window.width = 900
-    page.window.height = 900
-    page.window.min_width = 700
-    page.window.min_height = 750
-    page.window.resizable = True
-    page.run_task(page.window.center)
+    current_name = session.current_user.get("name") or ""
+    selected_avatar = {"value": session.current_user.get("avatar") or "🌟"}
+    # Tracks a locally-picked photo path, if any. When set, it takes
+    # visual priority over the emoji avatar.
+    selected_photo = {"path": session.current_user.get("photo")}
 
-    selected_avatar = {"value": "🌟"}
     avatar_preview = ft.Text(selected_avatar["value"], size=50)
     avatar_buttons = {}
 
     # ================================================================
-    # Header (sobre fondo navy, fuera de la tarjeta blanca)
+    # File picker (profile photo)
+    # ================================================================
+    def build_avatar_content():
+        """Returns the control that should sit inside avatar_circle:
+        the chosen photo if one was picked, otherwise the emoji."""
+        if selected_photo["path"]:
+            return ft.Image(
+                src=selected_photo["path"],
+                width=110,
+                height=110,
+                fit=ft.BoxFit.COVER,
+                border_radius=999,
+            )
+        return avatar_preview
+
+    async def pick_photo(e):
+        # In current Flet, FilePicker.pick_files() is awaited directly and
+        # returns the picked files - no page.overlay registration and no
+        # on_result callback needed.
+        files = await ft.FilePicker().pick_files(
+            dialog_title="Choose a profile photo",
+            allow_multiple=False,
+            file_type=ft.FilePickerFileType.IMAGE,
+        )
+        if not files:
+            return
+        selected_photo["path"] = files[0].path
+        avatar_circle.content = build_avatar_content()
+        avatar_circle.update()
+
+    # ================================================================
+    # Header (over navy background, outside the white card)
     # ================================================================
     def close_setup(e):
         page.go("/dashboard")
@@ -63,9 +102,9 @@ def screen_personalizeprofile(page: ft.Page):
 
     header = ft.Column(
         controls=[
-            ft.Text("Tu perfil", size=25, color=ft.Colors.WHITE),
+            ft.Text("Your profile", size=25, color=ft.Colors.WHITE),
             ft.Container(
-                content=ft.Text("Personaliza cómo te verán", size=15, color=COLOR_WHITE_TEXT),
+                content=ft.Text("Customize how others see you", size=15, color=WHITE_TEXT),
                 padding=ft.Padding.only(top=2.5),
             ),
             ft.Container(content=close_button, padding=ft.Padding.only(top=15)),
@@ -76,27 +115,24 @@ def screen_personalizeprofile(page: ft.Page):
     header_container = ft.Container(content=header, padding=ft.Padding.only(bottom=25))
 
     # ================================================================
-    # Foto de perfil / avatar grande + botón de cámara superpuesto
+    # Profile photo / large avatar + overlaid camera button
     # ================================================================
-    def pick_photo(e):
-        # TODO: conectar selector de archivo / cámara real
-        print("Cambiar foto")
-
     avatar_circle = ft.Container(
-        content=avatar_preview,
+        content=build_avatar_content(),
         width=110,
         height=110,
-        bgcolor=COLOR_BG_NAVY,
-        border=ft.Border.all(3.5, COLOR_TURQUOISE),
+        bgcolor=NAVY_BG,
+        border=ft.Border.all(3.5, TURQUOISE),
         border_radius=999,
         alignment=ft.Alignment.CENTER,
+        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
     )
 
     camera_button = ft.Container(
-        content=ft.Icon(ft.Icons.CAMERA_ALT_ROUNDED, size=18, color=COLOR_NAVY_TEXT),
+        content=ft.Icon(ft.Icons.CAMERA_ALT_ROUNDED, size=18, color=NAVY_TEXT),
         width=38,
         height=38,
-        bgcolor=COLOR_GOLD,
+        bgcolor=GOLD,
         border_radius=999,
         alignment=ft.Alignment.CENTER,
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=6,
@@ -109,7 +145,7 @@ def screen_personalizeprofile(page: ft.Page):
         controls=[
             avatar_circle,
             ft.Container(content=camera_button, alignment=ft.Alignment.BOTTOM_RIGHT,
-                         margin=ft.Margin.only(top=110 - 38, left=110 - 38)),
+                         width=110, height=110),
         ],
         width=110,
         height=110,
@@ -119,7 +155,7 @@ def screen_personalizeprofile(page: ft.Page):
         controls=[
             avatar_stack,
             ft.Container(
-                content=ft.Text("Toca la cámara para cambiar foto", size=11, color=COLOR_GRAY_TEXT,
+                content=ft.Text("Tap the camera icon to change your photo", size=11, color=TEXT_GRAY,
                                  text_align=ft.TextAlign.CENTER),
                 padding=ft.Padding.only(top=10),
             ),
@@ -129,43 +165,47 @@ def screen_personalizeprofile(page: ft.Page):
     )
 
     # ================================================================
-    # Campo: Nombre de usuario
+    # Field: Username
     # ================================================================
     username_field = ft.TextField(
-        value="Usuario Google",
-        text_style=ft.TextStyle(size=17.5, color=COLOR_NAVY_TEXT),
-        border_color=COLOR_INPUT_BORDER,
+        value=current_name,
+        text_style=ft.TextStyle(size=17.5, color=NAVY_TEXT),
+        border_color=INPUT_BORDER,
         border_width=0.9,
         border_radius=16.5,
         content_padding=ft.Padding.symmetric(horizontal=20, vertical=15),
-        cursor_color=COLOR_TURQUOISE,
-        focused_border_color=COLOR_TURQUOISE,
+        cursor_color=TURQUOISE,
+        focused_border_color=TURQUOISE,
     )
 
     username_section = ft.Column(
         controls=[
-            ft.Text("Nombre de usuario", size=15, weight=ft.FontWeight.BOLD, color=COLOR_NAVY_TEXT),
+            ft.Text("Username", size=15, weight=ft.FontWeight.BOLD, color=NAVY_TEXT),
             username_field,
         ],
         spacing=7.5,
     )
 
     # ================================================================
-    # Grilla de avatares de emoji
+    # Emoji avatar grid
     # ================================================================
     def style_avatar_button(container: ft.Container, is_selected: bool):
         if is_selected:
-            container.bgcolor = ft.Colors.with_opacity(0.1, COLOR_TURQUOISE)
-            container.border = ft.Border.all(2, COLOR_TURQUOISE)
+            container.bgcolor = ft.Colors.with_opacity(0.1, TURQUOISE)
+            container.border = ft.Border.all(2, TURQUOISE)
         else:
-            container.bgcolor = COLOR_AVATAR_BG
+            container.bgcolor = AVATAR_BG
             container.border = ft.Border.all(1.8, ft.Colors.TRANSPARENT)
 
     def select_avatar(emoji: str):
         def handler(e):
+            # Picking an emoji clears any previously chosen photo so the
+            # emoji is what actually shows in the big avatar circle.
             selected_avatar["value"] = emoji
+            selected_photo["path"] = None
             avatar_preview.value = emoji
-            avatar_preview.update()
+            avatar_circle.content = build_avatar_content()
+            avatar_circle.update()
             for em, btn in avatar_buttons.items():
                 style_avatar_button(btn, em == emoji)
                 btn.update()
@@ -195,24 +235,39 @@ def screen_personalizeprofile(page: ft.Page):
 
     avatar_section = ft.Column(
         controls=[
-            ft.Text("Elige tu avatar", size=15, weight=ft.FontWeight.BOLD, color=COLOR_NAVY_TEXT),
+            ft.Text("Choose your avatar", size=15, weight=ft.FontWeight.BOLD, color=NAVY_TEXT),
             ft.Container(content=avatar_grid, padding=ft.Padding.only(top=10)),
         ],
         spacing=0,
     )
 
     # ================================================================
-    # Botón "Guardar y continuar"
+    # "Save and continue" button
     # ================================================================
     def save_and_continue(e):
-        # TODO: persistir username_field.value y selected_avatar["value"]
-        print("Guardando perfil:", username_field.value, selected_avatar["value"])
-        page.go("/inicio")
+        user_id = session.current_user.get("id")
+        if user_id is not None:
+            try:
+                # If your database.update_profile supports a photo/avatar
+                # path column, this will persist it too. Falls back to
+                # name/avatar only if the extra kwarg isn't accepted.
+                database.update_profile(
+                    user_id,
+                    name=username_field.value,
+                    avatar=selected_avatar["value"],
+                    photo=selected_photo["path"],
+                )
+            except TypeError:
+                database.update_profile(user_id, name=username_field.value, avatar=selected_avatar["value"])
+        session.current_user["name"] = username_field.value
+        session.current_user["avatar"] = selected_avatar["value"]
+        session.current_user["photo"] = selected_photo["path"]
+        page.go("/dashboard")
 
     save_button = ft.Container(
-        content=ft.Text("Guardar y continuar 🤟", size=17.5, color=COLOR_NAVY_TEXT, weight=ft.FontWeight.W_600),
+        content=ft.Text("Save and continue 🤟", size=17.5, color=NAVY_TEXT, weight=ft.FontWeight.W_600),
         alignment=ft.Alignment.CENTER,
-        bgcolor=COLOR_TURQUOISE,
+        bgcolor=TURQUOISE,
         border_radius=16.5,
         padding=ft.Padding.symmetric(vertical=17),
         width=float("inf"),
@@ -223,7 +278,7 @@ def screen_personalizeprofile(page: ft.Page):
     )
 
     # ================================================================
-    # Tarjeta blanca
+    # White card
     # ================================================================
     card = ft.Container(
         content=ft.Column(
@@ -244,14 +299,19 @@ def screen_personalizeprofile(page: ft.Page):
                              color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK), offset=ft.Offset(0, 25)),
     )
 
+    # The outer container fills the whole page (expand=True) and the
+    # navy background stretches with it, so maximizing/full-screening
+    # the window is enough to make this occupy the whole computer
+    # screen while the white card keeps its original centered size.
     screen = ft.Container(
         content=ft.Column(
             controls=[header_container, card],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
             scroll=ft.ScrollMode.AUTO,
+            expand=True,
         ),
-        bgcolor=COLOR_BG_NAVY,
+        bgcolor=NAVY_BG,
         padding=ft.Padding.symmetric(horizontal=30, vertical=50),
         alignment=ft.Alignment.CENTER,
         expand=True,
@@ -263,4 +323,15 @@ def screen_personalizeprofile(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.run(screen_personalizeprofile)
+    def _standalone(page: ft.Page):
+        # Make the window occupy the full computer screen.
+        page.window.maximized = True
+        # If you prefer true edge-to-edge full screen (no title bar/
+        # window controls), use this instead:
+        # page.window.full_screen = True
+        page.window.min_width = 900
+        page.window.min_height = 700
+        page.update()
+        screen_personalizeprofile(page)
+
+    ft.run(_standalone)

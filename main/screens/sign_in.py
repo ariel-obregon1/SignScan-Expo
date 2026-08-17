@@ -1,9 +1,10 @@
 """
-Pantalla de inicio de sesión (screens/sign_in.py).
+Login screen (screens/sign_in.py).
 
-Layout de dos paneles: panel izquierdo con marca (logo + tagline),
-panel derecho con el formulario de login, ya conectado a la base de
-datos real (database.authenticate_user).
+Two-panel layout: left panel keeps its own navy-gradient branding,
+right panel is styled to match screens/sign_up.py (same white card,
+inputs, buttons, and back-link) so both auth screens feel consistent.
+Wired to the real database (database.authenticate_user).
 """
 
 import os
@@ -18,23 +19,28 @@ if PROJECT_ROOT not in sys.path:
 import database  # noqa: E402
 import session  # noqa: E402
 
-# ---- Paleta de colores ----
-COLOR_NAVY = "#001845"
-COLOR_SIDEBAR = "#002060"
-COLOR_TURQUOISE = "#40E0D0"
-COLOR_GRAY_TEXT = "#6B7A99"
-COLOR_PLACEHOLDER = "#99A1AF"
-COLOR_INPUT_BG = "#F9FAFB"
-COLOR_BORDER = "#E5E7EB"
-COLOR_DIVIDER = "#F3F4F6"
-COLOR_ERROR = "#DC2626"
+# ---- Colors (matches screens/sign_up.py palette) ----
+DARK_BLUE = "#001845"
+MAIN_BLUE = "#002060"
+TURQUOISE = "#40E0D0"
 
-BRAND_PANEL_WEIGHT = 38
-FORM_PANEL_WEIGHT = 62
+APP_GRAY = "#E5E7EB"
+TEXT_GRAY = "#6B7A99"
+LIGHT_GRAY = "#9BA8BF"
+ERROR_RED = "#DC2626"
+
+WHITE = "#FFFFFF"
+
+LEFT_PANEL_WEIGHT = 4
+RIGHT_PANEL_WEIGHT = 6
+
+
+def go_back_home(page):
+    page.go("/")
 
 
 def screen_signin(page: ft.Page):
-    page.title = "SignScan - Iniciar sesión"
+    page.title = "SignScan - Log in"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
     page.fonts = {
@@ -43,135 +49,82 @@ def screen_signin(page: ft.Page):
     page.theme = ft.Theme(font_family="Nunito")
 
     # ================================================================
-    # PANEL IZQUIERDO — Marca
+    # LEFT PANEL — Branding (kept distinct: navy gradient)
     # ================================================================
     brand_logo = ft.Container(
         content=ft.Text("🤟", size=40),
         width=90,
         height=90,
-        bgcolor=ft.Colors.WHITE,
+        bgcolor=WHITE,
         border_radius=20,
         alignment=ft.Alignment.CENTER,
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=25,
                              color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK), offset=ft.Offset(0, 8)),
     )
 
-    brand_panel = ft.Container(
-        content=ft.Column(
-            controls=[
-                brand_logo,
-                ft.Text("SignScan", size=37.5, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600),
-                ft.Text("Comunicación accesible para todos", size=17.5, weight=ft.FontWeight.BOLD,
-                        color=COLOR_TURQUOISE, text_align=ft.TextAlign.CENTER),
-            ],
-            spacing=15,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
-        ),
+    left_panel = ft.Container(
+        expand=LEFT_PANEL_WEIGHT,
         gradient=ft.LinearGradient(
             begin=ft.Alignment.TOP_LEFT,
             end=ft.Alignment.BOTTOM_RIGHT,
-            colors=[COLOR_SIDEBAR, "#004A6B", COLOR_NAVY],
+            colors=[MAIN_BLUE, "#004A6B", DARK_BLUE],
         ),
-        alignment=ft.Alignment.CENTER,
-        expand=True,
-    )
-
-    # ================================================================
-    # PANEL DERECHO — Formulario
-    # ================================================================
-    def back_link(e):
-        page.go("/")
-
-    back_button = ft.Container(
-        content=ft.Row(
-            controls=[
-                ft.Icon(ft.Icons.ARROW_BACK, size=16, color=COLOR_GRAY_TEXT),
-                ft.Text("Volver", size=17.5, weight=ft.FontWeight.BOLD, color=COLOR_GRAY_TEXT),
-            ],
-            spacing=5,
-        ),
-        on_click=back_link,
-        ink=True,
-        padding=ft.Padding.only(bottom=15),
-    )
-
-    def social_button(icon_char: str, icon_color: str, border_color: str = COLOR_BORDER):
-        return ft.Container(
-            content=ft.Text(icon_char, size=20, color=icon_color, weight=ft.FontWeight.BOLD),
+        padding=40,
+        content=ft.Column(
             expand=True,
-            height=55,
-            bgcolor=ft.Colors.WHITE,
-            border=ft.Border.all(0.9, border_color),
-            border_radius=16.5,
-            alignment=ft.Alignment.CENTER,
-            ink=True,
-            shadow=ft.BoxShadow(spread_radius=1, blur_radius=3,
-                                 color=ft.Colors.with_opacity(0.3, ft.Colors.BLACK), offset=ft.Offset(0, 1)),
-        )
-
-    apple_button = ft.Container(
-        content=ft.Icon(ft.Icons.APPLE, size=24, color=COLOR_NAVY),
-        expand=True, height=55, bgcolor=ft.Colors.WHITE,
-        border=ft.Border.all(0.9, COLOR_BORDER), border_radius=16.5,
-        alignment=ft.Alignment.CENTER, ink=True,
-        shadow=ft.BoxShadow(spread_radius=1, blur_radius=3,
-                             color=ft.Colors.with_opacity(0.3, ft.Colors.BLACK), offset=ft.Offset(0, 1)),
+            scroll=ft.ScrollMode.AUTO,
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=0,
+            controls=[
+                brand_logo,
+                ft.Container(height=15),
+                ft.Text("SignScan", size=37.5, color=WHITE, weight=ft.FontWeight.W_600),
+                ft.Container(height=10),
+                ft.Text(
+                    "Accessible communication for everyone",
+                    size=17.5,
+                    weight=ft.FontWeight.BOLD,
+                    color=TURQUOISE,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+            ],
+        ),
     )
 
-    social_row = ft.Row(
-        controls=[
-            social_button("G", "#4285F4"),
-            apple_button,
-            ft.Container(
-                content=ft.Text("f", size=22, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
-                expand=True, height=55, bgcolor="#1877F2",
-                border_radius=16.5, alignment=ft.Alignment.CENTER, ink=True,
-            ),
-        ],
-        spacing=15,
-    )
-
-    divider_row = ft.Row(
-        controls=[
-            ft.Container(expand=True, height=1, bgcolor=COLOR_DIVIDER),
-            ft.Text("O con email", size=15, color=COLOR_PLACEHOLDER),
-            ft.Container(expand=True, height=1, bgcolor=COLOR_DIVIDER),
-        ],
-        spacing=15,
-        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-    )
+    # ================================================================
+    # RIGHT PANEL — Form (same card/input/button style as sign_up.py)
+    # ================================================================
+    input_style = {
+        "width": 420,
+        "height": 52,
+        "filled": True,
+        "bgcolor": WHITE,
+        "border_color": "#CBD5E1",
+        "focused_border_color": TURQUOISE,
+        "color": "#0F172A",
+        "text_size": 15,
+        "border_radius": 14,
+    }
 
     email_field = ft.TextField(
-        hint_text="Correo electrónico",
-        hint_style=ft.TextStyle(color=COLOR_PLACEHOLDER, size=17.5),
-        bgcolor=COLOR_INPUT_BG,
-        border_color=COLOR_TURQUOISE,
-        border_width=1.8,
-        border_radius=16.5,
-        content_padding=ft.Padding.symmetric(horizontal=20, vertical=17.5),
-        text_size=17.5,
-        cursor_color=COLOR_TURQUOISE,
+        label="Email address",
+        hint_text="example@email.com",
+        **input_style,
     )
 
     password_field = ft.TextField(
-        hint_text="Contraseña",
-        hint_style=ft.TextStyle(color=COLOR_PLACEHOLDER, size=17.5),
-        bgcolor=COLOR_INPUT_BG,
-        border_color=COLOR_BORDER,
-        border_width=0.9,
-        border_radius=16.5,
-        content_padding=ft.Padding.symmetric(horizontal=20, vertical=17.5),
-        text_size=17.5,
-        cursor_color=COLOR_TURQUOISE,
+        label="Password",
+        hint_text="Enter your password",
         password=True,
         can_reveal_password=True,
+        **input_style,
     )
 
-    error_text = ft.Text("", size=14, color=COLOR_ERROR, visible=False, text_align=ft.TextAlign.CENTER)
+    error_text = ft.Text("", size=13, color=ERROR_RED, visible=False, text_align=ft.TextAlign.CENTER)
 
     forgot_password = ft.Container(
-        content=ft.Text("¿Olvidaste tu contraseña?", size=15, weight=ft.FontWeight.BOLD, color=COLOR_TURQUOISE),
+        content=ft.Text("Forgot your password?", size=14, weight=ft.FontWeight.BOLD, color=TURQUOISE),
         alignment=ft.Alignment.CENTER_RIGHT,
         padding=ft.Padding.only(top=5),
         ink=True,
@@ -181,9 +134,9 @@ def screen_signin(page: ft.Page):
         error_text.visible = False
         error_text.update()
 
-        ok, mensaje, user = database.authenticate_user(email_field.value, password_field.value)
+        ok, message, user = database.authenticate_user(email_field.value, password_field.value)
         if not ok:
-            error_text.value = mensaje
+            error_text.value = message
             error_text.visible = True
             error_text.update()
             return
@@ -191,97 +144,131 @@ def screen_signin(page: ft.Page):
         session.set_current_user(user)
         page.go("/dashboard")
 
-    login_button = ft.Container(
-        content=ft.Text("Iniciar sesión", size=17.5, color=COLOR_NAVY, weight=ft.FontWeight.W_600),
-        alignment=ft.Alignment.CENTER,
-        bgcolor=COLOR_TURQUOISE,
-        border_radius=16.5,
-        padding=ft.Padding.symmetric(vertical=20),
-        width=float("inf"),
-        shadow=ft.BoxShadow(spread_radius=1, blur_radius=6,
-                             color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK), offset=ft.Offset(0, 2)),
+    def social_slot(content_text: str, text_size: int):
+        return ft.Container(
+            width=65,
+            height=65,
+            border=ft.Border(
+                left=ft.BorderSide(1, "#E2E8F0"),
+                top=ft.BorderSide(1, "#E2E8F0"),
+                right=ft.BorderSide(1, "#E2E8F0"),
+                bottom=ft.BorderSide(1, "#E2E8F0"),
+            ),
+            border_radius=14,
+            content=ft.Text(content_text, size=text_size),
+            alignment=ft.Alignment.CENTER,
+        )
+
+    social_buttons = ft.Row(
+        alignment=ft.MainAxisAlignment.CENTER,
+        spacing=15,
+        controls=[
+            social_slot("G", 24),
+            social_slot("🍎", 22),
+            social_slot("f", 26),
+        ],
+    )
+
+    login_button = ft.ElevatedButton(
+        "Log in",
+        width=420,
+        height=58,
+        bgcolor=TURQUOISE,
+        color=DARK_BLUE,
         on_click=handle_login,
-        ink=True,
     )
 
     def go_to_signup(e):
-        page.go("/crear-cuenta")
+        page.go("/create-account")
 
-    signup_row = ft.Row(
+    form = ft.Column(
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
-            ft.Text("¿No tienes cuenta? ", size=17.5, color=COLOR_GRAY_TEXT),
-            ft.Container(
-                content=ft.Text("Crear cuenta", size=20, color=COLOR_NAVY, weight=ft.FontWeight.W_600),
-                on_click=go_to_signup,
-                ink=True,
+            ft.Row(
+                alignment=ft.MainAxisAlignment.START,
+                controls=[ft.TextButton("< Back", on_click=lambda e: go_back_home(page))],
+            ),
+            ft.Text("Welcome back", size=32, weight=ft.FontWeight.BOLD, color="#0F172A"),
+            ft.Text("Log in to continue learning", size=16, color=TEXT_GRAY),
+            ft.Container(height=15),
+            social_buttons,
+            ft.Container(height=15),
+            ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                controls=[
+                    ft.Container(width=130, height=1, bgcolor="#E5E7EB"),
+                    ft.Text("Or with email", size=13, color=LIGHT_GRAY),
+                    ft.Container(width=130, height=1, bgcolor="#E5E7EB"),
+                ],
+            ),
+            ft.Container(height=15),
+            email_field,
+            ft.Container(height=8),
+            password_field,
+            forgot_password,
+            ft.Container(height=10),
+            error_text,
+            ft.Container(height=5),
+            login_button,
+            ft.Container(height=15),
+            ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                controls=[
+                    ft.Text("Don't have an account?", color=TEXT_GRAY),
+                    ft.TextButton("Create account", on_click=go_to_signup),
+                ],
             ),
         ],
-        alignment=ft.MainAxisAlignment.CENTER,
     )
 
-    form_card = ft.Container(
+    right_panel = ft.Container(
+        expand=RIGHT_PANEL_WEIGHT,
+        bgcolor="#F1F5F9",
         content=ft.Column(
-            controls=[
-                back_button,
-                ft.Text("Bienvenido a SignScan", size=25, color=COLOR_NAVY),
-                ft.Container(
-                    content=ft.Text("Inicia sesión para continuar", size=17.5, color=COLOR_GRAY_TEXT),
-                    padding=ft.Padding.only(top=2.5, bottom=25),
-                ),
-                ft.Container(content=social_row, padding=ft.Padding.only(bottom=20)),
-                ft.Container(content=divider_row, padding=ft.Padding.only(bottom=20)),
-                ft.Column(
-                    controls=[
-                        email_field,
-                        password_field,
-                        forgot_password,
-                    ],
-                    spacing=12.5,
-                ),
-                ft.Container(content=error_text, padding=ft.Padding.only(top=10)),
-                ft.Container(content=login_button, padding=ft.Padding.only(top=10)),
-                ft.Container(content=signup_row, padding=ft.Padding.only(top=20)),
-            ],
-            spacing=0,
-            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-        ),
-        width=480,
-        padding=30,
-    )
-
-    form_panel = ft.Container(
-        content=form_card,
-        alignment=ft.Alignment.CENTER,
-        bgcolor=ft.Colors.WHITE,
-        expand=True,
-    )
-
-    # ================================================================
-    # LAYOUT PRINCIPAL
-    # ================================================================
-    root_row = ft.Row(
-        controls=[
-            ft.Container(content=brand_panel, expand=BRAND_PANEL_WEIGHT),
-            ft.Container(content=form_panel, expand=FORM_PANEL_WEIGHT),
-        ],
-        spacing=0,
-        expand=True,
-    )
-
-    page.add(
-        ft.Container(
-            content=root_row,
             expand=True,
-            shadow=ft.BoxShadow(spread_radius=1, blur_radius=50, color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK)),
-        )
+            scroll=ft.ScrollMode.AUTO,
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
+                ft.Container(
+                    width=520,
+                    padding=30,
+                    bgcolor=WHITE,
+                    border_radius=25,
+                    shadow=ft.BoxShadow(blur_radius=25, color="#22000000"),
+                    content=form,
+                ),
+            ],
+        ),
     )
+
+    # ================================================================
+    # MAIN LAYOUT
+    # ================================================================
+    view = ft.Container(
+        expand=True,
+        bgcolor=APP_GRAY,
+        padding=20,
+        content=ft.Row(
+            expand=True,
+            spacing=0,
+            controls=[left_panel, right_panel],
+        ),
+    )
+
+    page.controls.clear()
+    page.add(view)
+    page.update()
 
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        page.window.width = 1200
-        page.window.height = 780
-        page.run_task(page.window.center)
+        # Make the window occupy the full computer screen, matching the
+        # rest of the app's screens.
+        page.window.maximized = True
+        page.window.min_width = 1000
+        page.window.min_height = 700
+        page.update()
         screen_signin(page)
 
     ft.run(_standalone)
