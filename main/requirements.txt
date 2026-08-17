@@ -1,4 +1,6 @@
-flet>=0.28.0
+# The app uses the Flet 0.80+ API (ft.run, ft.Alignment.CENTER,
+# ft.Padding.only, ft.Border.all). On flet 0.28 it does not even start.
+flet>=0.80.0
 opencv-python>=4.9.0
 numpy>=1.26.0,<2.0.0
 tensorflow>=2.16.0
