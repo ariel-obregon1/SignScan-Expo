@@ -26,6 +26,7 @@ COLOR_GOLD = "#FFD700"
 COLOR_AMBER = "#F59E0B"
 COLOR_PURPLE = "#8B5CF6"
 COLOR_RED = "#DC2626"
+COLOR_LOGOUT_ICON = "#F87171"
 COLOR_NAVY_TEXT = "#002060"
 COLOR_GRAY_TEXT = "#6B7A99"
 COLOR_LIGHT_GRAY_TEXT = "#9BA8BF"
@@ -55,19 +56,7 @@ def screen_dashboard(page: ft.Page):
 
     user_name = session.current_user.get("name") or "User"
     user_email = session.current_user.get("email") or ""
-    user_avatar = session.current_user.get("avatar") or "🌟"
-    user_photo = session.current_user.get("photo")
-    print("PHOTO =", user_photo)
-    def build_user_avatar():
-        if user_photo:
-            return ft.Image(
-                src=user_photo,
-                width=44,
-                height=44,
-                fit=ft.BoxFit.COVER,
-            )
 
-        return ft.Text(user_avatar, size=16)
     # ================================================================
     # SIDEBAR
     # ================================================================
@@ -120,7 +109,7 @@ def screen_dashboard(page: ft.Page):
         content=ft.Row(
             controls=[
                 ft.Container(
-                    content=build_user_avatar(),
+                    content=session.get_avatar_control(size=16, container_size=44),
                     width=44,
                     height=44,
                     bgcolor=COLOR_SIDEBAR_DARKER,
@@ -166,7 +155,10 @@ def screen_dashboard(page: ft.Page):
     logout_button = ft.Container(
         content=ft.Row(
             controls=[
-                ft.Icon(ft.Icons.LOGOUT_ROUNDED, size=18, color=ft.Colors.WHITE),
+                # A slightly warm-tinted icon (instead of plain white)
+                # is a small, common affordance hinting this is a
+                # "leave/danger" action, without needing a full red button.
+                ft.Icon(ft.Icons.LOGOUT_ROUNDED, size=18, color=COLOR_LOGOUT_ICON),
                 ft.Text("Log out", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
             ],
             spacing=15,
@@ -233,9 +225,7 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # Stat cards — each stat now sits in a soft, accent-tinted icon
-    # circle instead of a bare emoji, and the value is bolder for more
-    # visual hierarchy.
+    # Stat cards
     # ================================================================
     def stat_card(emoji: str, value: str, label: str, accent_color: str):
         return ft.Container(
@@ -333,7 +323,11 @@ def screen_dashboard(page: ft.Page):
     )
 
     def category_label(text: str):
-        return ft.Text(text, size=10, color=COLOR_GRAY_TEXT)
+        # weight=BOLD gives these small uppercase "BASIC / INTERMEDIATE
+        # / ADVANCED" eyebrow labels the letter-spacing-like presence
+        # that section headers usually have, instead of reading as thin,
+        # easy-to-miss text.
+        return ft.Text(text, size=10.5, weight=ft.FontWeight.BOLD, color=COLOR_GRAY_TEXT)
 
     def topic_row(emoji: str, name: str, percent: int, percent_color: str):
         return ft.Container(
@@ -378,9 +372,6 @@ def screen_dashboard(page: ft.Page):
         )
 
     def category_card(label: str, content):
-        # Wraps each topic group in its own white card (matching
-        # scoreboard_card) instead of leaving the rows floating
-        # directly on the page background - groups them visually.
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -441,8 +432,7 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # Modules — a small arrow now hints these cards are clickable, and
-    # they share the same soft shadow as the rest of the page's cards.
+    # Modules
     # ================================================================
     def module_card(emoji: str, title: str, subtitle: str, bgcolor, text_color, route: str | None = None):
         body = ft.Column(
@@ -492,7 +482,7 @@ def screen_dashboard(page: ft.Page):
             ft.Row(
                 controls=[
                     module_card("📖", "Learn Signs", "Interactive sign language lessons",
-                                COLOR_GOLD, COLOR_NAVY_TEXT),
+                                COLOR_GOLD, COLOR_NAVY_TEXT, route="/learn"),
                     module_card("👥", "Community", "Connect with deaf people",
                                 ft.Colors.WHITE, COLOR_NAVY_TEXT, route="/community"),
                 ],
@@ -545,12 +535,10 @@ def screen_dashboard(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        # Make the window occupy the full computer screen, matching the
-        # rest of the app's screens.
         page.window.maximized = True
         page.window.min_width = 1100
         page.window.min_height = 700
         page.update()
         screen_dashboard(page)
 
-    ft.run(_standalone)
+    ft.run(_standalone, assets_dir="assets")

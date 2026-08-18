@@ -7,12 +7,14 @@ time the app is closed (it does not persist across runs — that's what
 the `users` table in the database is for).
 """
 
+import flet as ft
+
 current_user = {
     "id": None,
     "name": None,
     "email": None,
     "avatar": "🌟",
-    "photo": None
+    "photo": None,
 }
 
 
@@ -34,3 +36,25 @@ def clear_current_user():
 
 def is_logged_in() -> bool:
     return current_user["id"] is not None
+
+
+def get_avatar_control(size: int = 16, container_size: int | None = None) -> ft.Control:
+    """Single source of truth for "what should the user's avatar look
+    like right now". Returns an ft.Image of their chosen profile photo
+    if they've set one, otherwise an ft.Text with their emoji avatar.
+
+    Every screen should call this instead of building
+    `ft.Text(session.current_user["avatar"], ...)` by hand, so that
+    setting a photo in the profile screen makes it show up everywhere
+    without having to remember to update each screen individually.
+
+    Wrap the result in a Container with border_radius=999 and
+    clip_behavior=ft.ClipBehavior.ANTI_ALIAS to get a circular avatar
+    (required so a photo actually gets clipped into a circle instead
+    of covering the container as a square).
+    """
+    photo = current_user.get("photo")
+    if photo:
+        dim = container_size or size
+        return ft.Image(src=photo, width=dim, height=dim, fit=ft.BoxFit.COVER)
+    return ft.Text(current_user.get("avatar") or "🌟", size=size)

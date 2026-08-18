@@ -34,6 +34,10 @@ WHITE = "#FFFFFF"
 LEFT_PANEL_WEIGHT = 4
 RIGHT_PANEL_WEIGHT = 6
 
+# Same rounded corners as the rest of the app's cards/inputs
+# (14-20px radius), instead of Flet's default, squarer button shape.
+PRIMARY_BUTTON_STYLE = ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=14))
+
 
 def go_back_home(page):
     page.go("/")
@@ -124,7 +128,20 @@ def screen_signin(page: ft.Page):
         **input_style,
     )
 
-    error_text = ft.Text("", size=13, color=ERROR_RED, visible=False, text_align=ft.TextAlign.CENTER)
+    # A small alert box instead of bare colored text - reads more like
+    # a real form error and less like text that just happens to be red.
+    error_text = ft.Text("", size=13, color=ERROR_RED, text_align=ft.TextAlign.CENTER)
+    error_box = ft.Container(
+        content=ft.Row(
+            controls=[ft.Icon(ft.Icons.ERROR_OUTLINE_ROUNDED, size=16, color=ERROR_RED), error_text],
+            spacing=8,
+            alignment=ft.MainAxisAlignment.CENTER,
+        ),
+        padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+        bgcolor=ft.Colors.with_opacity(0.08, ERROR_RED),
+        border_radius=10,
+        visible=False,
+    )
 
     forgot_password = ft.Container(
         content=ft.Text("Forgot your password?", size=14, weight=ft.FontWeight.BOLD, color=TURQUOISE),
@@ -134,20 +151,20 @@ def screen_signin(page: ft.Page):
     )
 
     def handle_login(e):
-        error_text.visible = False
-        error_text.update()
+        error_box.visible = False
+        error_box.update()
 
         ok, message, user = database.authenticate_user(email_field.value, password_field.value)
         if not ok:
             error_text.value = message
-            error_text.visible = True
-            error_text.update()
+            error_box.visible = True
+            error_box.update()
             return
 
         session.set_current_user(user)
         page.go("/dashboard")
 
-    def social_slot(content_text: str, text_size: int):
+    def social_slot(content_text: str, text_size: int, text_color: str | None = None):
         return ft.Container(
             width=65,
             height=65,
@@ -158,17 +175,18 @@ def screen_signin(page: ft.Page):
                 bottom=ft.BorderSide(1, "#E2E8F0"),
             ),
             border_radius=14,
-            content=ft.Text(content_text, size=text_size),
+            content=ft.Text(content_text, size=text_size, weight=ft.FontWeight.BOLD, color=text_color),
             alignment=ft.Alignment.CENTER,
+            ink=True,
         )
 
     social_buttons = ft.Row(
         alignment=ft.MainAxisAlignment.CENTER,
         spacing=15,
         controls=[
-            social_slot("G", 24),
+            social_slot("G", 24, "#4285F4"),
             social_slot("🍎", 22),
-            social_slot("f", 26),
+            social_slot("f", 26, "#1877F2"),
         ],
     )
 
@@ -178,6 +196,7 @@ def screen_signin(page: ft.Page):
         height=58,
         bgcolor=TURQUOISE,
         color=DARK_BLUE,
+        style=PRIMARY_BUTTON_STYLE,
         on_click=handle_login,
     )
 
@@ -210,7 +229,7 @@ def screen_signin(page: ft.Page):
             password_field,
             forgot_password,
             ft.Container(height=10),
-            error_text,
+            error_box,
             ft.Container(height=5),
             login_button,
             ft.Container(height=15),
@@ -274,4 +293,4 @@ if __name__ == "__main__":
         page.update()
         screen_signin(page)
 
-    ft.run(_standalone)
+    ft.run(_standalone, assets_dir="assets")

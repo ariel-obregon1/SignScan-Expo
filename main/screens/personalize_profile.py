@@ -3,11 +3,16 @@ Profile setup screen (screens/personalize_profile.py).
 
 White card centered over a navy background: avatar with a camera
 button overlay, username field, selectable emoji avatar grid, and a
-"Save and continue" button. Reads/writes session.current_user.
+"Save and continue" button. Reads/writes session.current_user, and
+persists to the database so the photo/avatar show up everywhere else
+in the app (sidebar, community posts, etc. via
+session.get_avatar_control()).
 """
 
 import os
+import shutil
 import sys
+import uuid
 
 import flet as ft
 
@@ -38,6 +43,16 @@ CARD_WIDTH = 500
 AVATAR_OUTER_SIZE = 118
 AVATAR_INNER_SIZE = 110
 
+# main.py runs the app with ft.run(main, assets_dir="assets") - that's
+# what lets screens reference "logo.png" as a plain relative src and
+# have Flet serve it correctly. User-picked photos need to live under
+# that same assets folder for the same reason: an absolute filesystem
+# path from the file picker may not render (or may stop working the
+# moment the original file is moved), while a path relative to
+# assets_dir is exactly what Flet's asset server and ft.Image expect.
+ASSETS_DIR = os.path.join(PROJECT_ROOT, "assets")
+AVATARS_DIR = os.path.join(ASSETS_DIR, "avatars")
+
 
 def _section_divider():
     return ft.Container(height=1, bgcolor=DIVIDER_COLOR, margin=ft.Margin.symmetric(vertical=22))
@@ -54,8 +69,10 @@ def screen_personalizeprofile(page: ft.Page):
 
     current_name = session.current_user.get("name") or ""
     selected_avatar = {"value": session.current_user.get("avatar") or "🌟"}
-    # Tracks a locally-picked photo path, if any. When set, it takes
-    # visual priority over the emoji avatar.
+    # Tracks the avatar photo's path relative to assets_dir (e.g.
+    # "avatars/user_3_ab12cd34.png"), if one was ever picked. When set,
+    # it takes visual priority over the emoji avatar - same convention
+    # session.get_avatar_control() uses everywhere else in the app.
     selected_photo = {"path": session.current_user.get("photo")}
 
     avatar_preview = ft.Text(selected_avatar["value"], size=48)
@@ -86,9 +103,27 @@ def screen_personalizeprofile(page: ft.Page):
             allow_multiple=False,
             file_type=ft.FilePickerFileType.IMAGE,
         )
-        if not files:
+        if not files or not files[0].path:
             return
-        selected_photo["path"] = files[0].path
+
+        source_path = files[0].path
+
+        # Copy the picked file into assets/avatars instead of storing
+        # the original OS path directly: this is what makes it show up
+        # correctly through ft.Image(src=...) / session.get_avatar_control()
+        # everywhere else in the app, and keeps working even if the
+        # original file gets moved or deleted later.
+        os.makedirs(AVATARS_DIR, exist_ok=True)
+        ext = os.path.splitext(source_path)[1] or ".png"
+        user_id = session.current_user.get("id") or "tmp"
+        filename = f"user_{user_id}_{uuid.uuid4().hex[:8]}{ext}"
+        dest_path = os.path.join(AVATARS_DIR, filename)
+        try:
+            shutil.copyfile(source_path, dest_path)
+        except OSError:
+            return  # picked file unreadable - leave the previous photo in place
+
+        selected_photo["path"] = f"avatars/{filename}"
         avatar_circle.content = build_avatar_content()
         avatar_circle.update()
 
@@ -286,18 +321,15 @@ def screen_personalizeprofile(page: ft.Page):
     def save_and_continue(e):
         user_id = session.current_user.get("id")
         if user_id is not None:
-            try:
-                # If your database.update_profile supports a photo/avatar
-                # path column, this will persist it too. Falls back to
-                # name/avatar only if the extra kwarg isn't accepted.
-                database.update_profile(
-                    user_id,
-                    name=username_field.value,
-                    avatar=selected_avatar["value"],
-                    photo=selected_photo["path"],
-                )
-            except TypeError:
-                database.update_profile(user_id, name=username_field.value, avatar=selected_avatar["value"])
+            # database.update_profile's photo column is confirmed to
+            # exist (see database.py), so this persists name, avatar,
+            # and photo in one call.
+            database.update_profile(
+                user_id,
+                name=username_field.value,
+                avatar=selected_avatar["value"],
+                photo=selected_photo["path"],
+            )
         session.current_user["name"] = username_field.value
         session.current_user["avatar"] = selected_avatar["value"]
         session.current_user["photo"] = selected_photo["path"]
@@ -383,4 +415,4 @@ if __name__ == "__main__":
         page.update()
         screen_personalizeprofile(page)
 
-    ft.run(_standalone)
+    ft.run(_standalone, assets_dir="assets")

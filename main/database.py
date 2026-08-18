@@ -34,9 +34,23 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def _add_missing_columns(conn: sqlite3.Connection):
+    """Migration step: CREATE TABLE IF NOT EXISTS only creates the
+    table the first time it's ever run - it does nothing to a table
+    that already exists with an older schema. So a users table created
+    before the `photo` column was added stays without it forever,
+    unless we explicitly ALTER it in here. Safe to call on every
+    startup: it only adds columns that are actually missing."""
+    existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
+
+    if "photo" not in existing_columns:
+        conn.execute("ALTER TABLE users ADD COLUMN photo TEXT")
+
+
 def init_db():
-    """Creates the users table if it doesn't exist yet. Call once on
-    app startup (from main.py)."""
+    """Creates the users table if it doesn't exist yet, and migrates
+    it if it exists but is missing newer columns. Call once on app
+    startup (from main.py)."""
     conn = get_connection()
     try:
         conn.execute(
@@ -53,6 +67,7 @@ def init_db():
             )
             """
         )
+        _add_missing_columns(conn)
         conn.commit()
     finally:
         conn.close()

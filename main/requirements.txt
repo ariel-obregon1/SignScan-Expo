@@ -1,9 +1,6 @@
-# The app uses the Flet 0.80+ API (ft.run, ft.Alignment.CENTER,
-# ft.Padding.only, ft.Border.all). On flet 0.28 it does not even start.
-flet>=0.80.0
-opencv-python>=4.9.0
-numpy>=1.26.0,<2.0.0
-tensorflow>=2.16.0
-mediapipe>=0.10.14
-h5py>=3.10.0
- 
+flet==0.86.5
+keras==3.15.1
+mediapipe==1.0.1
+numpy==2.5.2
+opencv_contrib_python==4.11.0.86
+opencv_python==4.11.0.86

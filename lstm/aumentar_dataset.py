@@ -10,7 +10,7 @@ DATASET = "dataset_lstm"
 
 # Clases a aumentar
 CLASES_A_AUMENTAR = [
-    "Hola"
+    "Tu"
 ]
 
 # Cuántas nuevas generar por cada muestra real

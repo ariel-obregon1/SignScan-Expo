@@ -1,5 +1,5 @@
 """
-Community screen (screens/community_screen.py).
+Community screen (screens/community.py).
 
 Navigation sidebar (same as dashboard.py) + a post composer + a feed
 of community posts with likes and replies (now actually functional).
@@ -48,7 +48,6 @@ def screen_community(page: ft.Page):
 
     user_name = session.current_user.get("name") or "User"
     user_email = session.current_user.get("email") or ""
-    user_avatar = session.current_user.get("avatar") or "🌟"
 
     # ================================================================
     # SIDEBAR (same structure as dashboard.py)
@@ -102,13 +101,14 @@ def screen_community(page: ft.Page):
         content=ft.Row(
             controls=[
                 ft.Container(
-                    content=ft.Text(user_avatar, size=16),
+                    content=session.get_avatar_control(size=16, container_size=44),
                     width=44,
                     height=44,
                     bgcolor=COLOR_SIDEBAR_DARKER,
                     border=ft.Border.all(1.8, COLOR_TURQUOISE),
                     border_radius=999,
                     alignment=ft.Alignment.CENTER,
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
                 ),
                 ft.Column(
                     controls=[
@@ -177,9 +177,7 @@ def screen_community(page: ft.Page):
     )
 
     # ================================================================
-    # Header — title at the very top of the screen. Solid, high-contrast
-    # navy on white with a small turquoise accent so it stands out
-    # clearly instead of blending into the background.
+    # Header
     # ================================================================
     header = ft.Container(
         content=ft.Row(
@@ -280,7 +278,10 @@ def screen_community(page: ft.Page):
         text = (post_input.value or "").strip()
         if not text:
             return
-        new_post = build_post_card(user_avatar, user_name, "now", text, likes=0, replies=[])
+        # use_session_avatar=True: this post is from the logged-in
+        # user, so it should show their photo if they've set one.
+        new_post = build_post_card(None, user_name, "now", text, likes=0, replies=[],
+                                    use_session_avatar=True)
         feed_column.controls.insert(0, new_post)
         feed_column.update()
         post_input.value = ""
@@ -296,12 +297,13 @@ def screen_community(page: ft.Page):
     composer_header = ft.Row(
         controls=[
             ft.Container(
-                content=ft.Text(user_avatar, size=22.5),
+                content=session.get_avatar_control(size=22.5, container_size=45),
                 width=45,
                 height=45,
                 bgcolor=COLOR_AVATAR_BG,
                 border_radius=999,
                 alignment=ft.Alignment.CENTER,
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             ),
             ft.Text(user_name, size=17.5, weight=ft.FontWeight.W_900, color=COLOR_NAVY_TEXT),
         ],
@@ -333,16 +335,27 @@ def screen_community(page: ft.Page):
     # ================================================================
     # Feed post cards
     # ================================================================
-    def build_reply(avatar: str, name: str, text: str):
+    def _circle_avatar(avatar_emoji, use_session_avatar, size, bgcolor):
+        content = (
+            session.get_avatar_control(size=size * 0.65, container_size=size)
+            if use_session_avatar
+            else ft.Text(avatar_emoji, size=size * 0.65)
+        )
+        return ft.Container(
+            content=content,
+            width=size,
+            height=size,
+            bgcolor=bgcolor,
+            border_radius=999,
+            alignment=ft.Alignment.CENTER,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+        )
+
+    def build_reply(avatar: str, name: str, text: str, use_session_avatar: bool = False):
         return ft.Container(
             content=ft.Row(
                 controls=[
-                    ft.Container(
-                        content=ft.Text(avatar, size=20),
-                        width=27,
-                        height=30,
-                        alignment=ft.Alignment.CENTER,
-                    ),
+                    _circle_avatar(avatar, use_session_avatar, 27, ft.Colors.TRANSPARENT),
                     ft.Column(
                         controls=[
                             ft.Text(name, size=15, weight=ft.FontWeight.W_900, color=COLOR_NAVY_TEXT),
@@ -362,7 +375,8 @@ def screen_community(page: ft.Page):
             margin=ft.Margin.only(top=15),
         )
 
-    def build_post_card(avatar: str, name: str, time_label: str, text: str, likes: int, replies: list):
+    def build_post_card(avatar: str, name: str, time_label: str, text: str, likes: int, replies: list,
+                         use_session_avatar: bool = False):
         # ---- Like: filled red heart when liked, outlined gray otherwise ----
         like_state = {"liked": False, "count": likes}
         like_icon = ft.Icon(ft.Icons.FAVORITE_BORDER_ROUNDED, size=14, color=COLOR_LIGHT_GRAY_TEXT)
@@ -390,7 +404,10 @@ def screen_community(page: ft.Page):
         )
 
         # ---- Replies: a live column plus a toggleable reply composer ----
-        reply_controls = [build_reply(r["avatar"], r["name"], r["text"]) for r in replies]
+        reply_controls = [
+            build_reply(r["avatar"], r["name"], r["text"], r.get("use_session_avatar", False))
+            for r in replies
+        ]
         replies_column = ft.Column(controls=reply_controls, spacing=0)
 
         reply_count_text = ft.Text(
@@ -416,7 +433,9 @@ def screen_community(page: ft.Page):
             reply_text = (reply_input.value or "").strip()
             if not reply_text:
                 return
-            replies_column.controls.append(build_reply(user_avatar, user_name, reply_text))
+            # The reply is always from the logged-in user, so it should
+            # show their photo if they've set one.
+            replies_column.controls.append(build_reply(None, user_name, reply_text, use_session_avatar=True))
             replies_column.update()
             reply_input.value = ""
             reply_input.update()
@@ -460,14 +479,7 @@ def screen_community(page: ft.Page):
         return ft.Container(
             content=ft.Row(
                 controls=[
-                    ft.Container(
-                        content=ft.Text(avatar, size=22.5),
-                        width=45,
-                        height=45,
-                        bgcolor=COLOR_REPLY_AVATAR_BG,
-                        border_radius=999,
-                        alignment=ft.Alignment.CENTER,
-                    ),
+                    _circle_avatar(avatar, use_session_avatar, 45, COLOR_REPLY_AVATAR_BG),
                     ft.Column(
                         controls=[
                             ft.Row(

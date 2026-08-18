@@ -16,6 +16,16 @@ LIGHT_GRAY = "#9BA8BF"
 
 WHITE = "#FFFFFF"
 
+# Shared button shapes so every button in this screen has the same
+# rounded corners as the app's cards/inputs (14-20px radius elsewhere)
+# instead of Flet's default, much squarer Material shape.
+PRIMARY_BUTTON_STYLE = ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=14))
+OUTLINED_BUTTON_STYLE = ft.ButtonStyle(
+    shape=ft.RoundedRectangleBorder(radius=14),
+    side=ft.BorderSide(1, "#CBD5E1"),
+    color=DARK_BLUE,
+)
+
 
 # =========================
 # CARDS
@@ -74,7 +84,18 @@ def open_create_account(page):
 
 def screen_welcome(page):
 
-    page.clean()
+    # This was missing: without it the screen falls back to Flet's
+    # default page padding/font instead of matching the rest of the
+    # app (edge-to-edge layout, Nunito font, consistent title/bgcolor).
+    page.title = "SignScan - Welcome"
+    page.bgcolor = ft.Colors.GREY_300
+    page.padding = 0
+    page.fonts = {
+        "Nunito": "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/Nunito%5Bwght%5D.ttf"
+    }
+    page.theme = ft.Theme(font_family="Nunito")
+
+    page.controls.clear()
 
     # ================================================================
     # LEFT PANEL — Branding
@@ -175,6 +196,7 @@ def screen_welcome(page):
                 height=55,
                 bgcolor=TURQUOISE,
                 color=DARK_BLUE,
+                style=PRIMARY_BUTTON_STYLE,
                 on_click=lambda e: open_create_account(page),
             ),
 
@@ -184,6 +206,7 @@ def screen_welcome(page):
                 "Log in",
                 width=420,
                 height=55,
+                style=OUTLINED_BUTTON_STYLE,
                 on_click=lambda e: page.go("/login"),
             ),
 
@@ -218,9 +241,9 @@ def screen_welcome(page):
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=15,
                 controls=[
-                    ft.OutlinedButton("Google", width=127),
-                    ft.OutlinedButton("Apple", width=127),
-                    ft.OutlinedButton("Facebook", width=127),
+                    ft.OutlinedButton("Google", width=127, style=OUTLINED_BUTTON_STYLE),
+                    ft.OutlinedButton("Apple", width=127, style=OUTLINED_BUTTON_STYLE),
+                    ft.OutlinedButton("Facebook", width=127, style=OUTLINED_BUTTON_STYLE),
                 ],
             ),
 
@@ -241,6 +264,7 @@ def screen_welcome(page):
                         style=ft.TextStyle(
                             color=TURQUOISE,
                             size=13,
+                            weight=ft.FontWeight.BOLD,
                         ),
                     ),
                 ],
@@ -290,7 +314,15 @@ def screen_welcome(page):
     )
 
     page.add(view)
+    page.update()
 
 
 if __name__ == "__main__":
-    ft.run(screen_welcome)
+    def _standalone(page: ft.Page):
+        page.window.maximized = True
+        page.window.min_width = 1000
+        page.window.min_height = 700
+        page.update()
+        screen_welcome(page)
+
+    ft.run(_standalone, assets_dir="assets")

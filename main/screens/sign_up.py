@@ -28,6 +28,10 @@ ERROR_RED = "#DC2626"
 
 WHITE = "#FFFFFF"
 
+# Same rounded corners as the rest of the app's cards/inputs
+# (14-20px radius), instead of Flet's default, squarer button shape.
+PRIMARY_BUTTON_STYLE = ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=14))
+
 
 # =========================
 # NAVIGATION
@@ -97,7 +101,20 @@ def screen_signup(page):
         **input_style
     )
 
-    error_text = ft.Text("", size=13, color=ERROR_RED, visible=False, text_align=ft.TextAlign.CENTER)
+    # A small alert box instead of bare colored text - reads more like
+    # a real form error and less like text that just happens to be red.
+    error_text = ft.Text("", size=13, color=ERROR_RED, text_align=ft.TextAlign.CENTER)
+    error_box = ft.Container(
+        content=ft.Row(
+            controls=[ft.Icon(ft.Icons.ERROR_OUTLINE_ROUNDED, size=16, color=ERROR_RED), error_text],
+            spacing=8,
+            alignment=ft.MainAxisAlignment.CENTER,
+        ),
+        padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+        bgcolor=ft.Colors.with_opacity(0.08, ERROR_RED),
+        border_radius=10,
+        visible=False,
+    )
 
     # =========================
     # VALIDATION + REGISTRATION
@@ -105,12 +122,12 @@ def screen_signup(page):
 
     def show_error(message: str):
         error_text.value = message
-        error_text.visible = True
-        error_text.update()
+        error_box.visible = True
+        error_box.update()
 
     def handle_signup(e):
-        error_text.visible = False
-        error_text.update()
+        error_box.visible = False
+        error_box.update()
 
         if password.value != confirm_password.value:
             show_error("Passwords do not match")
@@ -206,9 +223,12 @@ def screen_signup(page):
                 content=ft.Text(
                     "G",
                     size=24,
+                    weight=ft.FontWeight.BOLD,
+                    color="#4285F4",
                 ),
 
                 alignment=ft.Alignment.CENTER,
+                ink=True,
             ),
 
             ft.Container(
@@ -228,6 +248,7 @@ def screen_signup(page):
                 ),
 
                 alignment=ft.Alignment.CENTER,
+                ink=True,
             ),
 
             ft.Container(
@@ -244,9 +265,12 @@ def screen_signup(page):
                 content=ft.Text(
                     "f",
                     size=26,
+                    weight=ft.FontWeight.BOLD,
+                    color="#1877F2",
                 ),
 
                 alignment=ft.Alignment.CENTER,
+                ink=True,
             ),
 
         ]
@@ -340,7 +364,7 @@ def screen_signup(page):
 
             ft.Container(height=10),
 
-            error_text,
+            error_box,
 
             ft.Container(height=5),
 
@@ -353,6 +377,7 @@ def screen_signup(page):
 
                 bgcolor=TURQUOISE,
                 color=DARK_BLUE,
+                style=PRIMARY_BUTTON_STYLE,
 
                 on_click=handle_signup,
 
@@ -465,4 +490,4 @@ if __name__ == "__main__":
         page.update()
         screen_signup(page)
 
-    ft.run(_standalone)
+    ft.run(_standalone, assets_dir="assets")
