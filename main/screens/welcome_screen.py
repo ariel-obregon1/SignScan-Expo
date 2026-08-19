@@ -1,7 +1,25 @@
+"""
+Pantalla de bienvenida — screens/welcome_screen.py
+
+Es la primera pantalla de la app (ruta "/") y la puerta de entrada:
+desde aquí se va a crear cuenta ("/create-account") o a iniciar sesión
+("/login").
+
+Estructura: dos paneles en una fila.
+    - Panel izquierdo (40%): fondo azul con el logo, el nombre de la app
+      y tres tarjetas de características.
+    - Panel derecho (60%): fondo blanco con el texto principal y los
+      botones de acción.
+
+Como todas las pantallas del proyecto, es una función que recibe la
+`page` de Flet y le añade controles; no devuelve nada. Quien decide
+cuándo llamarla es el enrutador de main.py.
+"""
+
 import flet as ft
 
 # =========================
-# COLORS
+# COLORES
 # =========================
 
 DARK_BLUE = "#001845"
@@ -28,10 +46,22 @@ OUTLINED_BUTTON_STYLE = ft.ButtonStyle(
 
 
 # =========================
-# CARDS
+# TARJETAS
 # =========================
 
 def _feature_card(icon, text):
+    """Construye una de las tres tarjetas de características.
+
+    Es un cuadrado azul con borde translúcido, un emoji grande dentro y
+    una etiqueta debajo. Se usa para "Signs", "AI" y "Community".
+
+    Args:
+        icon: emoji que se muestra dentro del cuadrado.
+        text: etiqueta corta que va debajo del cuadrado.
+
+    Returns:
+        La columna de Flet ya montada, lista para meter en una fila.
+    """
     return ft.Column(
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         spacing=8,
@@ -71,10 +101,15 @@ def _feature_card(icon, text):
 
 
 # =========================
-# NAVIGATION
+# NAVEGACIÓN
 # =========================
 
 def open_create_account(page):
+    """Lleva a la pantalla de alta de cuenta.
+
+    Args:
+        page: la página de Flet, que es quien sabe cambiar de ruta.
+    """
     page.go("/create-account")
 
 
@@ -83,10 +118,18 @@ def open_create_account(page):
 # =========================
 
 def screen_welcome(page):
+    """Dibuja la pantalla de bienvenida completa sobre `page`.
 
-    # This was missing: without it the screen falls back to Flet's
-    # default page padding/font instead of matching the rest of the
-    # app (edge-to-edge layout, Nunito font, consistent title/bgcolor).
+    Monta los dos paneles (marca a la izquierda, acciones a la derecha)
+    y los añade dentro de un contenedor con margen, que es lo que da el
+    efecto de tarjeta flotando sobre el fondo.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+    """
+    # Esto faltaba: sin ello la pantalla se queda con el relleno y la
+    # tipografía por defecto de Flet en vez de los del resto de la app
+    # (diseño de borde a borde, fuente Nunito, título y fondo iguales).
     page.title = "SignScan - Welcome"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
@@ -319,6 +362,15 @@ def screen_welcome(page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
+        """Arranque suelto de esta pantalla, para trabajar su diseño.
+
+        Con `python screens/welcome_screen.py` se abre solo la
+        bienvenida. Los botones no llevarán a ningún sitio: el
+        enrutador vive en main.py.
+
+        Args:
+            page: la página que crea Flet.
+        """
         page.window.maximized = True
         page.window.min_width = 1000
         page.window.min_height = 700

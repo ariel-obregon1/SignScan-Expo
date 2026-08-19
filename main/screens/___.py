@@ -1,19 +1,42 @@
+"""
+Utilidad suelta: volcar todo el código en un solo archivo de texto.
+
+NO forma parte de la aplicación. Nadie la importa y ejecutarla no
+afecta a la app: recorre una carpeta, junta el contenido de todos los
+archivos .py y los escribe seguidos en `todos_los_codigos.txt`, con una
+cabecera antes de cada archivo. Sirve para pegar el proyecto entero en
+un chat, un correo o un documento.
+
+Uso:
+    cd main
+    python screens/___.py
+
+Dos avisos:
+    - La ruta `carpeta_proyecto` es RELATIVA a donde se ejecuta el
+      comando, no a donde está este archivo. Si se lanza desde otra
+      carpeta, no encontrará nada y generará un archivo vacío.
+    - Este script vive dentro del paquete `screens/`, que es donde van
+      las pantallas de la app. Su sitio natural sería una carpeta de
+      herramientas aparte (`tools/`), para que nadie lo confunda con una
+      pantalla.
+"""
+
 import os
 
-# Carpeta principal del proyecto
+# Carpeta que se va a recorrer, relativa al directorio actual
 carpeta_proyecto = "screens"  # Cambia esto a la ruta de tu proyecto si es necesario
 
-# Archivo de salida
+# Archivo donde se escribe todo junto (se sobrescribe en cada uso)
 archivo_salida = "todos_los_codigos.txt"
 
-# Extensiones permitidas
+# Solo se copian los archivos con estas extensiones
 extensiones = [".py"]
 
 with open(archivo_salida, "w", encoding="utf-8") as salida:
 
     for root, dirs, files in os.walk(carpeta_proyecto):
 
-        # Ignorar entorno virtual
+        # Saltarse el entorno virtual: son miles de archivos ajenos
         if "venv" in root:
             continue
 

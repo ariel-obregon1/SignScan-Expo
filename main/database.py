@@ -1,12 +1,29 @@
 """
-Database layer (SQLite) for SignScan.
+Capa de base de datos (SQLite) de SignScan — database.py
 
-Handles the users table: account creation, authentication, and
-profile updates. Passwords are never stored in plain text — they are
-hashed with PBKDF2-HMAC-SHA256 plus a random per-user salt.
+Se encarga de la tabla `users`: alta de cuentas, autenticación y
+actualización del perfil. Las contraseñas NUNCA se guardan en texto
+plano: se cifran con PBKDF2-HMAC-SHA256 usando una sal aleatoria
+distinta para cada usuario, así que dos personas con la misma clave
+producen hashes diferentes.
 
-Location: project root (next to main.py, hand_detector.py, etc.)
-The .db file is created automatically the first time init_db() runs.
+Ubicación: la raíz del módulo de la app (junto a main.py,
+hand_detector.py, etc.). El archivo .db se crea solo la primera vez que
+se ejecuta init_db(), que main.py llama al arrancar.
+
+Convención de esta capa: las funciones que pueden fallar por culpa del
+usuario (email repetido, contraseña corta, credenciales incorrectas) no
+lanzan excepciones; devuelven la tupla (ok, mensaje, usuario) para que
+la pantalla muestre ese mensaje tal cual.
+
+Esquema de la tabla `users`:
+    id             INTEGER  clave primaria autoincremental
+    name           TEXT     nombre visible
+    email          TEXT     único, siempre en minúsculas
+    password_hash  TEXT     hash PBKDF2 en hexadecimal
+    salt           TEXT     sal aleatoria en hexadecimal
+    avatar         TEXT     emoji del perfil (por defecto una estrella)
+    created_at     TEXT     fecha de alta en formato ISO
 """
 
 import binascii
@@ -24,10 +41,27 @@ PBKDF2_ITERATIONS = 100_000
 
 
 # ------------------------------------------------------------------
-# Connection / schema
+# Conexión y esquema
 # ------------------------------------------------------------------
 
 def get_connection() -> sqlite3.Connection:
+    """Abre una conexión nueva a signscan.db y la devuelve.
+
+    Cada llamada crea su propia conexión (y quien la usa debe cerrarla,
+    normalmente en un bloque finally). Es lo más sencillo y seguro aquí:
+    SQLite no permite compartir una conexión entre hilos, y el traductor
+    corre en un hilo aparte.
+
+    Detalles de la configuración:
+        - row_factory = sqlite3.Row para poder leer las columnas por
+          nombre (row["email"]) y convertirlas a dict fácilmente.
+        - PRAGMA foreign_keys = ON porque SQLite las desactiva por
+          defecto; así las tablas que se añadan en el futuro sí
+          respetarán sus relaciones.
+
+    Returns:
+        Conexión abierta a la base de datos.
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -35,12 +69,22 @@ def get_connection() -> sqlite3.Connection:
 
 
 def _add_missing_columns(conn: sqlite3.Connection):
-    """Migration step: CREATE TABLE IF NOT EXISTS only creates the
-    table the first time it's ever run - it does nothing to a table
-    that already exists with an older schema. So a users table created
-    before the `photo` column was added stays without it forever,
-    unless we explicitly ALTER it in here. Safe to call on every
-    startup: it only adds columns that are actually missing."""
+    """Añade a la tabla `users` las columnas que le falten.
+
+    Hace de migración. CREATE TABLE IF NOT EXISTS solo crea la tabla la
+    primerísima vez: a una tabla que ya existe con un esquema viejo no
+    le hace nada. Sin este paso, una base de datos creada antes de que
+    existiera la columna `photo` se quedaría sin ella para siempre.
+
+    Es seguro llamarla en cada arranque: mira primero qué columnas hay
+    (PRAGMA table_info) y solo añade las que faltan de verdad.
+
+    Args:
+        conn: conexión abierta, la misma que usa init_db().
+
+    Al añadir una columna nueva al esquema, hay que añadir aquí su
+    ALTER TABLE correspondiente.
+    """
     existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
 
     if "photo" not in existing_columns:
@@ -48,9 +92,13 @@ def _add_missing_columns(conn: sqlite3.Connection):
 
 
 def init_db():
-    """Creates the users table if it doesn't exist yet, and migrates
-    it if it exists but is missing newer columns. Call once on app
-    startup (from main.py)."""
+    """Crea la tabla `users` si no existe, y la migra si se quedó vieja.
+
+    Se llama una sola vez al arrancar la app (main.main). Es idempotente
+    gracias a CREATE TABLE IF NOT EXISTS: ejecutarla mil veces no borra
+    ni modifica nada. Después llama a _add_missing_columns() para poner
+    al día las bases de datos creadas con un esquema anterior.
+    """
     conn = get_connection()
     try:
         conn.execute(
@@ -74,10 +122,27 @@ def init_db():
 
 
 # ------------------------------------------------------------------
-# Password hashing
+# Cifrado de contraseñas
 # ------------------------------------------------------------------
 
 def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
+    """Calcula el hash PBKDF2-HMAC-SHA256 de una contraseña.
+
+    Args:
+        password: contraseña en texto plano, tal cual la escribió el
+            usuario.
+        salt: sal a reutilizar. Se pasa cuando se está VERIFICANDO una
+            contraseña (hay que usar la misma sal con la que se guardó).
+            Si es None se genera una sal aleatoria nueva de 16 bytes,
+            que es lo que toca al CREAR una cuenta.
+
+    Returns:
+        Tupla (hash_hex, sal_hex), ambos en hexadecimal para poder
+        guardarlos como texto en SQLite.
+
+    Las 100.000 iteraciones (PBKDF2_ITERATIONS) están para que probar
+    contraseñas por fuerza bruta sea lento a propósito.
+    """
     if salt is None:
         salt = os.urandom(16)
     pwd_hash = hashlib.pbkdf2_hmac(
@@ -87,16 +152,42 @@ def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
 
 
 def _verify_password(password: str, stored_hash_hex: str, stored_salt_hex: str) -> bool:
+    """Comprueba si una contraseña coincide con el hash guardado.
+
+    Vuelve a cifrar lo que escribió el usuario con la MISMA sal que se
+    guardó en su fila y compara los dos hashes. Nunca se descifra nada:
+    PBKDF2 solo va en una dirección.
+
+    Args:
+        password: contraseña que acaba de escribir el usuario.
+        stored_hash_hex: columna `password_hash` de la tabla.
+        stored_salt_hex: columna `salt` de la tabla.
+
+    Returns:
+        True si la contraseña es correcta.
+    """
     salt = binascii.unhexlify(stored_salt_hex)
     new_hash, _ = _hash_password(password, salt)
     return new_hash == stored_hash_hex
 
 
 # ------------------------------------------------------------------
-# Queries
+# Consultas
 # ------------------------------------------------------------------
 
 def get_user_by_email(email: str) -> dict | None:
+    """Busca un usuario por su correo.
+
+    Normaliza el email (quita espacios y lo pasa a minúsculas) antes de
+    consultar, porque así es como se guarda en create_user; si no,
+    "Ariel@X.com" y "ariel@x.com" parecerían cuentas distintas.
+
+    Args:
+        email: correo a buscar, en cualquier combinación de mayúsculas.
+
+    Returns:
+        La fila como diccionario, o None si no existe esa cuenta.
+    """
     conn = get_connection()
     try:
         row = conn.execute(
@@ -108,6 +199,17 @@ def get_user_by_email(email: str) -> dict | None:
 
 
 def get_user_by_id(user_id: int) -> dict | None:
+    """Busca un usuario por su clave primaria.
+
+    Se usa sobre todo justo después de un INSERT, para devolver la fila
+    completa (con created_at y avatar ya rellenos por la base de datos).
+
+    Args:
+        user_id: valor de la columna `id`.
+
+    Returns:
+        La fila como diccionario, o None si ese id no existe.
+    """
     conn = get_connection()
     try:
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -117,15 +219,53 @@ def get_user_by_id(user_id: int) -> dict | None:
 
 
 def email_exists(email: str) -> bool:
+    """Indica si ya hay una cuenta registrada con ese correo.
+
+    Es un atajo sobre get_user_by_email() para que create_user pueda dar
+    un mensaje claro antes de intentar el INSERT.
+
+    Args:
+        email: correo a comprobar.
+
+    Returns:
+        True si el correo ya está en uso.
+    """
     return get_user_by_email(email) is not None
 
 
 # ------------------------------------------------------------------
-# Sign up / sign in
+# Alta de cuenta e inicio de sesión
 # ------------------------------------------------------------------
 
 def create_user(name: str, email: str, password: str) -> tuple[bool, str, dict | None]:
-    """Creates a new account. Returns (ok, message, user|None)."""
+    """Crea una cuenta nueva y devuelve el usuario ya guardado.
+
+    Valida en este orden (y se detiene en el primer fallo, para que el
+    mensaje que ve el usuario sea el del primer problema real):
+        1. que el nombre no esté vacío,
+        2. que el email tenga forma de email (EMAIL_RE),
+        3. que la contraseña tenga 8 caracteres o más,
+        4. que el email no esté ya registrado.
+
+    Solo si todo pasa se cifra la contraseña y se inserta la fila. El
+    email se guarda siempre en minúsculas y sin espacios.
+
+    Args:
+        name: nombre visible del usuario.
+        email: correo, se normaliza a minúsculas.
+        password: contraseña en texto plano (nunca se guarda así).
+
+    Returns:
+        Tupla (ok, mensaje, usuario):
+            ok      -> True si se creó la cuenta.
+            mensaje -> texto listo para mostrar en pantalla, tanto si
+                       salió bien como si falló la validación.
+            usuario -> la fila recién creada como dict, o None si falló.
+
+    Nota: el IntegrityError se captura igualmente por si dos altas con el
+    mismo correo ocurren a la vez y la comprobación previa se queda
+    corta; la restricción UNIQUE de la tabla es la garantía final.
+    """
     name = (name or "").strip()
     email = (email or "").strip().lower()
 
@@ -159,7 +299,22 @@ def create_user(name: str, email: str, password: str) -> tuple[bool, str, dict |
 
 
 def authenticate_user(email: str, password: str) -> tuple[bool, str, dict | None]:
-    """Verifies credentials. Returns (ok, message, user|None)."""
+    """Comprueba unas credenciales de inicio de sesión.
+
+    Args:
+        email: correo escrito en la pantalla de login.
+        password: contraseña escrita en la pantalla de login.
+
+    Returns:
+        Tupla (ok, mensaje, usuario), igual que create_user(). Si las
+        credenciales son correctas, `usuario` es la fila completa, que
+        sign_in.py pasa directamente a session.set_current_user().
+
+    Nota de seguridad: los mensajes distinguen entre "no existe esa
+    cuenta" y "contraseña incorrecta", que es más cómodo de usar pero
+    también le confirma a un atacante qué correos están registrados. Si
+    algún día importa, ambos casos deberían devolver el mismo texto.
+    """
     email = (email or "").strip().lower()
 
     if not email or not password:
@@ -175,6 +330,21 @@ def authenticate_user(email: str, password: str) -> tuple[bool, str, dict | None
 
 
 def update_profile(user_id: int, name: str | None = None, avatar: str | None = None, photo: str | None = None,):
+    """Actualiza el perfil de un usuario ya existente.
+
+    Los tres campos son opcionales: se actualiza solo lo que se pase
+    distinto de None, así que se puede cambiar únicamente el avatar sin
+    tocar el nombre ni la foto.
+
+    Args:
+        user_id: id del usuario a modificar.
+        name: nombre nuevo, o None para dejarlo como está.
+        avatar: emoji nuevo, o None para dejarlo como está.
+        photo: ruta de la foto RELATIVA a la carpeta assets/, o None
+            para dejar la que hubiera. Se guarda relativa a propósito:
+            una ruta absoluta del disco deja de funcionar en cuanto se
+            mueve el archivo, y Flet sirve las imágenes desde assets/.
+    """
     conn = get_connection()
     try:
         if name is not None:

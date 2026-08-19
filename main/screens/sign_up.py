@@ -1,4 +1,25 @@
-# screens/sign_up.py
+"""
+Pantalla de alta de cuenta — screens/sign_up.py
+
+Ruta "/create-account". Recoge nombre, correo y contraseña (con
+confirmación), crea la cuenta en la base de datos y, si sale bien, deja
+al usuario en la pantalla de personalizar perfil.
+
+Estructura: dos paneles, igual que el login.
+    - Panel izquierdo (40%): logo y marca sobre fondo azul.
+    - Panel derecho (60%): tarjeta blanca con el formulario.
+
+Reparto de responsabilidades en la validación:
+    - aquí solo se comprueba que las dos contraseñas coincidan, porque
+      es lo único que la base de datos no puede saber;
+    - el resto (nombre vacío, email con formato raro, contraseña corta,
+      correo ya registrado) lo valida database.create_user y esta
+      pantalla se limita a mostrar el mensaje que devuelve.
+
+El bloque de PROJECT_ROOT de abajo mete la carpeta padre en sys.path
+para que `import database` funcione tanto si la app se lanza desde
+main/ como si se ejecuta este archivo suelto desde screens/.
+"""
 
 import os
 import sys
@@ -14,7 +35,7 @@ import session  # noqa: E402
 
 
 # =========================
-# COLORS
+# COLORES
 # =========================
 
 DARK_BLUE = "#001845"
@@ -34,19 +55,34 @@ PRIMARY_BUTTON_STYLE = ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=14)
 
 
 # =========================
-# NAVIGATION
+# NAVEGACIÓN
 # =========================
 
 def go_back_home(page):
+    """Vuelve a la pantalla de bienvenida.
+
+    La usa el enlace "< Back" de la parte superior del formulario.
+
+    Args:
+        page: la página de Flet.
+    """
     page.go("/")
 
 
 # =========================
-# CREATE ACCOUNT SCREEN
+# PANTALLA DE CREAR CUENTA
 # =========================
 
 def screen_signup(page):
+    """Dibuja la pantalla de alta de cuenta sobre `page`.
 
+    Monta los cuatro campos del formulario, el texto de error (oculto
+    hasta que hace falta) y los dos paneles. Limpia page.controls antes
+    de añadir nada, para no acumular la pantalla anterior.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+    """
     page.title = "SignScan - Create account"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
@@ -58,7 +94,10 @@ def screen_signup(page):
     page.controls.clear()
 
     # =========================
-    # INPUTS
+    # CAMPOS DEL FORMULARIO
+    #
+    # input_style se define una sola vez y se reparte con ** a los
+    # cuatro campos, para que todos midan y se vean igual.
     # =========================
 
     input_style = {
@@ -117,15 +156,31 @@ def screen_signup(page):
     )
 
     # =========================
-    # VALIDATION + REGISTRATION
+    # VALIDACIÓN Y REGISTRO
     # =========================
 
     def show_error(message: str):
+        """Muestra un mensaje de error en rojo bajo el formulario.
+
+        Args:
+            message: texto a mostrar. Suele venir tal cual de
+                database.create_user().
+        """
         error_text.value = message
         error_box.visible = True
         error_box.update()
 
     def handle_signup(e):
+        """Crea la cuenta cuando el usuario pulsa el botón.
+
+        Flujo: esconde el error anterior, comprueba que las dos
+        contraseñas coincidan, pide el alta a la base de datos y, si
+        todo va bien, guarda al usuario en la sesión y salta a
+        "/profile" para que elija avatar.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         error_box.visible = False
         error_box.update()
 
@@ -142,7 +197,7 @@ def screen_signup(page):
         page.go("/profile")
 
     # =========================
-    # LEFT PANEL
+    # PANEL IZQUIERDO (marca)
     # =========================
 
     left_panel = ft.Container(
@@ -411,7 +466,7 @@ def screen_signup(page):
     )
 
     # =========================
-    # RIGHT PANEL
+    # PANEL DERECHO (formulario)
     # =========================
 
     right_panel = ft.Container(
@@ -482,8 +537,17 @@ def screen_signup(page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        # Make the window occupy the full computer screen, matching the
-        # rest of the app's screens.
+        """Arranque suelto de esta pantalla, para trabajar su diseño.
+
+        Con `python screens/sign_up.py` se abre solo el alta de cuenta.
+        El formulario sí crea usuarios de verdad en la base de datos,
+        pero la navegación posterior no funcionará: el enrutador está en
+        main.py.
+
+        Args:
+            page: la página que crea Flet.
+        """
+        # Ventana maximizada, igual que el resto de pantallas de la app.
         page.window.maximized = True
         page.window.min_width = 1000
         page.window.min_height = 700
