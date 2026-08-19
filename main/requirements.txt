@@ -1,9 +1,44 @@
-# The app uses the Flet 0.80+ API (ft.run, ft.Alignment.CENTER,
-# ft.Padding.only, ft.Border.all). On flet 0.28 it does not even start.
+# =====================================================================
+# Dependencias de la APLICACIÓN SignScan (carpeta main/)
+#
+# Instalación recomendada, desde esta carpeta:
+#     python -m venv venv
+#     venv\Scripts\activate          (Windows)
+#     pip install -r requirements.txt
+#
+# Para entrenar o capturar señas nuevas, ver lstm/requirements.txt.
+# =====================================================================
+
+# Interfaz gráfica.
+# La app usa la API de Flet 0.80+ (ft.run, ft.Alignment.CENTER,
+# ft.Padding.only, ft.Border.all). Con flet 0.28 NO arranca: ft.run()
+# no existe en esa versión. Probado con 0.86.5.
 flet>=0.80.0
+
+# Captura de la webcam y ventana de vídeo del traductor.
 opencv-python>=4.9.0
+
+# Cálculo de los vectores de landmarks.
+# El tope <2.0 no es opcional: mediapipe y las versiones de TensorFlow
+# que usa el proyecto todavía no funcionan con numpy 2.
 numpy>=1.26.0,<2.0.0
+
+# Modelo LSTM ya entrenado (se carga con keras, que viene dentro de
+# TensorFlow). Solo se importa cuando el usuario activa la cámara.
 tensorflow>=2.16.0
+
+# Detección de manos (Hand Landmarker, Tasks API).
+# Necesita además el archivo hand_landmarker.task, que NO está en el
+# repositorio; hay que descargarlo una vez en esta misma carpeta:
+#   python -c "import urllib.request; urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', 'hand_landmarker.task')"
 mediapipe>=0.10.14
+
+# Lectura del archivo del modelo (.keras). Normalmente lo instala
+# TensorFlow, pero se deja explícito para no depender de ello.
 h5py>=3.10.0
- 
+
+# ---------------------------------------------------------------------
+# Nota: si solo se quiere ver la interfaz (login, perfil, dashboard) sin
+# el traductor, basta con instalar flet. La pantalla /scan detecta que
+# faltan los paquetes de cámara/IA y muestra un aviso en vez de fallar.
+# ---------------------------------------------------------------------

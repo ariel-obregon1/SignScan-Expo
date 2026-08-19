@@ -1,9 +1,24 @@
 """
-Profile setup screen (screens/personalize_profile.py).
+Pantalla de personalizar perfil — screens/personalize_profile.py
 
-White card centered over a navy background: avatar with a camera
-button overlay, username field, selectable emoji avatar grid, and a
-"Save and continue" button. Reads/writes session.current_user.
+Ruta "/profile". Es el paso siguiente al alta de cuenta: aquí el
+usuario elige cómo se le va a ver en la app.
+
+Estructura: una tarjeta blanca centrada sobre fondo azul marino, con
+    - el avatar grande y un botón de cámara encima para poner una foto,
+    - el campo de nombre de usuario,
+    - una rejilla de 20 emojis para elegir avatar,
+    - el botón "Save and continue", que guarda y va al dashboard.
+
+Estado de la pantalla: se lleva en dos diccionarios de una sola clave
+(selected_avatar y selected_photo) en vez de variables sueltas, porque
+las funciones anidadas necesitan MODIFICARLOS y en Python no se puede
+reasignar una variable del ámbito exterior sin `nonlocal`; con un
+diccionario basta con cambiar su contenido.
+
+Limitación conocida: la foto elegida NO se guarda en la base de datos
+(database.update_profile no tiene columna para ella), solo vive en la
+sesión hasta que se cierra la app. El nombre y el emoji sí se guardan.
 """
 
 import os
@@ -18,7 +33,7 @@ if PROJECT_ROOT not in sys.path:
 import database  # noqa: E402
 import session  # noqa: E402
 
-# ---- Colors ----
+# ---- Colores ----
 NAVY_BG = "#002060"
 TURQUOISE = "#40E0D0"
 GOLD = "#FFD700"
@@ -35,6 +50,15 @@ AVATAR_EMOJIS = [
 
 
 def screen_personalizeprofile(page: ft.Page):
+    """Dibuja la pantalla de personalizar perfil sobre `page`.
+
+    Arranca leyendo lo que ya haya en la sesión (nombre y avatar
+    actuales), de forma que si el usuario vuelve a entrar se encuentre
+    sus datos ya puestos en vez de los valores por defecto.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+    """
     page.title = "SignScan - Your profile"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
@@ -45,19 +69,27 @@ def screen_personalizeprofile(page: ft.Page):
 
     current_name = session.current_user.get("name") or ""
     selected_avatar = {"value": session.current_user.get("avatar") or "🌟"}
-    # Tracks a locally-picked photo path, if any. When set, it takes
-    # visual priority over the emoji avatar.
+    # Guarda la ruta de la foto elegida del disco, si hay alguna.
+    # Cuando tiene valor, manda sobre el emoji en el avatar grande.
     selected_photo = {"path": session.current_user.get("photo")}
 
     avatar_preview = ft.Text(selected_avatar["value"], size=50)
     avatar_buttons = {}
 
     # ================================================================
-    # File picker (profile photo)
+    # Selector de archivos (foto de perfil)
     # ================================================================
     def build_avatar_content():
-        """Returns the control that should sit inside avatar_circle:
-        the chosen photo if one was picked, otherwise the emoji."""
+        """Decide qué va dentro del círculo grande del avatar.
+
+        Si el usuario eligió una foto, manda la foto; si no, el emoji.
+        Se llama cada vez que cambia una de las dos cosas para redibujar
+        el círculo.
+
+        Returns:
+            Un ft.Image con la foto recortada en redondo, o el ft.Text
+            con el emoji.
+        """
         if selected_photo["path"]:
             return ft.Image(
                 src=selected_photo["path"],
@@ -69,9 +101,19 @@ def screen_personalizeprofile(page: ft.Page):
         return avatar_preview
 
     async def pick_photo(e):
-        # In current Flet, FilePicker.pick_files() is awaited directly and
-        # returns the picked files - no page.overlay registration and no
-        # on_result callback needed.
+        """Abre el diálogo del sistema para elegir una foto de perfil.
+
+        Es asíncrona porque el selector de archivos de Flet se espera
+        con `await`: la app no se bloquea mientras el usuario busca la
+        imagen. Si cierra el diálogo sin elegir nada, no se toca nada.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
+        # En las versiones actuales de Flet, FilePicker.pick_files() se
+        # espera directamente y devuelve los archivos elegidos: no hace
+        # falta registrarlo en page.overlay ni usar un callback
+        # on_result como en versiones antiguas.
         files = await ft.FilePicker().pick_files(
             dialog_title="Choose a profile photo",
             allow_multiple=False,
@@ -84,9 +126,17 @@ def screen_personalizeprofile(page: ft.Page):
         avatar_circle.update()
 
     # ================================================================
-    # Header (over navy background, outside the white card)
+    # Cabecera (sobre el fondo azul, fuera de la tarjeta blanca)
     # ================================================================
     def close_setup(e):
+        """Cierra la personalización sin guardar y va al dashboard.
+
+        Es la X de arriba: los cambios que el usuario haya tocado en
+        esta pantalla se pierden a propósito.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         page.go("/dashboard")
 
     close_button = ft.Container(
@@ -115,7 +165,7 @@ def screen_personalizeprofile(page: ft.Page):
     header_container = ft.Container(content=header, padding=ft.Padding.only(bottom=25))
 
     # ================================================================
-    # Profile photo / large avatar + overlaid camera button
+    # Foto de perfil / avatar grande con el botón de cámara encima
     # ================================================================
     avatar_circle = ft.Container(
         content=build_avatar_content(),
@@ -165,7 +215,7 @@ def screen_personalizeprofile(page: ft.Page):
     )
 
     # ================================================================
-    # Field: Username
+    # Campo: nombre de usuario
     # ================================================================
     username_field = ft.TextField(
         value=current_name,
@@ -187,9 +237,21 @@ def screen_personalizeprofile(page: ft.Page):
     )
 
     # ================================================================
-    # Emoji avatar grid
+    # Rejilla de avatares (emojis)
     # ================================================================
     def style_avatar_button(container: ft.Container, is_selected: bool):
+        """Pinta un botón de emoji como seleccionado o normal.
+
+        Modifica el contenedor que recibe (no crea uno nuevo): el
+        seleccionado lleva fondo turquesa suave y borde turquesa; los
+        demás, fondo gris claro y borde transparente (transparente y no
+        "sin borde" para que todos ocupen exactamente lo mismo y la
+        rejilla no baile al cambiar de selección).
+
+        Args:
+            container: el botón a repintar.
+            is_selected: True si es el emoji elegido ahora mismo.
+        """
         if is_selected:
             container.bgcolor = ft.Colors.with_opacity(0.1, TURQUOISE)
             container.border = ft.Border.all(2, TURQUOISE)
@@ -198,9 +260,30 @@ def screen_personalizeprofile(page: ft.Page):
             container.border = ft.Border.all(1.8, ft.Colors.TRANSPARENT)
 
     def select_avatar(emoji: str):
+        """Fabrica el manejador de clic para un emoji concreto.
+
+        Devuelve una función en vez de ser el manejador directamente
+        porque los 20 botones se crean en un bucle: así cada uno se
+        queda con SU emoji. Si se usara el mismo manejador para todos,
+        los 20 acabarían apuntando al último emoji del bucle.
+
+        Args:
+            emoji: el emoji que representa este botón.
+
+        Returns:
+            La función que Flet llamará al pulsar ese botón.
+        """
         def handler(e):
-            # Picking an emoji clears any previously chosen photo so the
-            # emoji is what actually shows in the big avatar circle.
+            """Aplica la selección de este emoji.
+
+            Actualiza el estado, redibuja el círculo grande y repinta
+            los 20 botones para que solo uno quede resaltado.
+
+            Args:
+                e: evento de clic de Flet. No se usa.
+            """
+            # Elegir un emoji borra la foto que hubiera puesta, para
+            # que sea el emoji lo que se vea en el círculo grande.
             selected_avatar["value"] = emoji
             selected_photo["path"] = None
             avatar_preview.value = emoji
@@ -242,15 +325,30 @@ def screen_personalizeprofile(page: ft.Page):
     )
 
     # ================================================================
-    # "Save and continue" button
+    # Botón "Save and continue"
     # ================================================================
     def save_and_continue(e):
+        """Guarda el perfil y sigue al dashboard.
+
+        Escribe en dos sitios: en la base de datos (para que el cambio
+        sobreviva al cierre de la app) y en la sesión en memoria (para
+        que el dashboard lo vea al instante, sin volver a consultar).
+
+        Si no hay usuario en sesión (por ejemplo, abriendo esta pantalla
+        suelta para probar el diseño), se salta la parte de la base de
+        datos y solo actualiza la sesión.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         user_id = session.current_user.get("id")
         if user_id is not None:
             try:
-                # If your database.update_profile supports a photo/avatar
-                # path column, this will persist it too. Falls back to
-                # name/avatar only if the extra kwarg isn't accepted.
+                # Si algún día database.update_profile acepta una
+                # columna para la ruta de la foto, esta llamada la
+                # guardará también. Mientras no la acepte, lanza
+                # TypeError y se reintenta abajo solo con nombre y
+                # avatar (que es lo que pasa hoy).
                 database.update_profile(
                     user_id,
                     name=username_field.value,
@@ -278,7 +376,7 @@ def screen_personalizeprofile(page: ft.Page):
     )
 
     # ================================================================
-    # White card
+    # Tarjeta blanca (el formulario en sí)
     # ================================================================
     card = ft.Container(
         content=ft.Column(
@@ -299,10 +397,10 @@ def screen_personalizeprofile(page: ft.Page):
                              color=ft.Colors.with_opacity(0.5, ft.Colors.BLACK), offset=ft.Offset(0, 25)),
     )
 
-    # The outer container fills the whole page (expand=True) and the
-    # navy background stretches with it, so maximizing/full-screening
-    # the window is enough to make this occupy the whole computer
-    # screen while the white card keeps its original centered size.
+    # El contenedor exterior ocupa toda la página (expand=True) y el
+    # fondo azul se estira con él, así que basta con maximizar o poner
+    # la ventana a pantalla completa para llenar el monitor entero,
+    # mientras la tarjeta blanca conserva su tamaño y sigue centrada.
     screen = ft.Container(
         content=ft.Column(
             controls=[header_container, card],
@@ -324,10 +422,19 @@ def screen_personalizeprofile(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        # Make the window occupy the full computer screen.
+        """Arranque suelto de esta pantalla, para trabajar su diseño.
+
+        Con `python screens/personalize_profile.py` se abre solo el
+        perfil. Al no haber sesión iniciada, los campos salen vacíos y
+        el guardado solo afecta a la sesión en memoria.
+
+        Args:
+            page: la página que crea Flet.
+        """
+        # Ventana maximizada para ocupar todo el monitor.
         page.window.maximized = True
-        # If you prefer true edge-to-edge full screen (no title bar/
-        # window controls), use this instead:
+        # Si se prefiere pantalla completa de verdad (sin barra de
+        # título ni controles de ventana), usar esto otro:
         # page.window.full_screen = True
         page.window.min_width = 900
         page.window.min_height = 700

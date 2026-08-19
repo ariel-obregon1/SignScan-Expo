@@ -1,7 +1,25 @@
+"""
+Pantalla de bienvenida — screens/welcome_screen.py
+
+Es la primera pantalla de la app (ruta "/") y la puerta de entrada:
+desde aquí se va a crear cuenta ("/create-account") o a iniciar sesión
+("/login").
+
+Estructura: dos paneles en una fila.
+    - Panel izquierdo (40%): fondo azul con el logo, el nombre de la app
+      y tres tarjetas de características.
+    - Panel derecho (60%): fondo blanco con el texto principal y los
+      botones de acción.
+
+Como todas las pantallas del proyecto, es una función que recibe la
+`page` de Flet y le añade controles; no devuelve nada. Quien decide
+cuándo llamarla es el enrutador de main.py.
+"""
+
 import flet as ft
 
 # =========================
-# COLORS
+# COLORES
 # =========================
 
 DARK_BLUE = "#001845"
@@ -17,10 +35,22 @@ WHITE = "#FFFFFF"
 
 
 # =========================
-# CARDS
+# TARJETAS
 # =========================
 
 def _feature_card(icon, text):
+    """Construye una de las tres tarjetas de características.
+
+    Es un cuadrado azul con borde translúcido, un emoji grande dentro y
+    una etiqueta debajo. Se usa para "Signs", "AI" y "Community".
+
+    Args:
+        icon: emoji que se muestra dentro del cuadrado.
+        text: etiqueta corta que va debajo del cuadrado.
+
+    Returns:
+        La columna de Flet ya montada, lista para meter en una fila.
+    """
     return ft.Column(
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         spacing=8,
@@ -60,19 +90,33 @@ def _feature_card(icon, text):
 
 
 # =========================
-# NAVIGATION
+# NAVEGACIÓN
 # =========================
 
 def open_create_account(page):
+    """Lleva a la pantalla de alta de cuenta.
+
+    Args:
+        page: la página de Flet, que es quien sabe cambiar de ruta.
+    """
     page.go("/create-account")
 
 
 # =========================
-# SCREEN
+# PANTALLA
 # =========================
 
 def screen_welcome(page):
+    """Dibuja la pantalla de bienvenida completa sobre `page`.
 
+    Empieza limpiando la página (page.clean) para que no quede nada de
+    la pantalla anterior, monta los dos paneles y los añade dentro de un
+    contenedor gris con margen, que es lo que da el efecto de "tarjeta
+    flotando" sobre el fondo.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+    """
     page.clean()
 
     left_panel = ft.Container(
@@ -257,4 +301,8 @@ def screen_welcome(page):
 
 
 if __name__ == "__main__":
+    # Permite abrir SOLO esta pantalla para trabajar en su diseño, sin
+    # arrancar la app entera:  python screens/welcome_screen.py
+    # Los botones de navegación no llevarán a ningún sitio, porque el
+    # enrutador vive en main.py.
     ft.run(screen_welcome)

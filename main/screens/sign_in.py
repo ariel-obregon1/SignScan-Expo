@@ -1,10 +1,18 @@
 """
-Login screen (screens/sign_in.py).
+Pantalla de inicio de sesión — screens/sign_in.py
 
-Two-panel layout: left panel keeps its own navy-gradient branding,
-right panel is styled to match screens/sign_up.py (same white card,
-inputs, buttons, and back-link) so both auth screens feel consistent.
-Wired to the real database (database.authenticate_user).
+Ruta "/login". Comprueba las credenciales contra la base de datos real
+(database.authenticate_user), y si son correctas guarda al usuario en la
+sesión y salta al dashboard.
+
+Estructura: dos paneles.
+    - Panel izquierdo (40%): marca de la app sobre un degradado azul.
+    - Panel derecho (60%): tarjeta blanca con el formulario, con el
+      mismo estilo que screens/sign_up.py para que las dos pantallas de
+      autenticación se sientan iguales.
+
+Los botones de redes sociales (Google, Apple, Facebook) son decorativos:
+hoy no hacen nada, son cuadros sin evento de clic.
 """
 
 import os
@@ -19,7 +27,7 @@ if PROJECT_ROOT not in sys.path:
 import database  # noqa: E402
 import session  # noqa: E402
 
-# ---- Colors (matches screens/sign_up.py palette) ----
+# ---- Colores (la misma paleta que screens/sign_up.py) ----
 DARK_BLUE = "#001845"
 MAIN_BLUE = "#002060"
 TURQUOISE = "#40E0D0"
@@ -36,10 +44,28 @@ RIGHT_PANEL_WEIGHT = 6
 
 
 def go_back_home(page):
+    """Vuelve a la pantalla de bienvenida.
+
+    La usa el enlace "< Back" de la esquina superior del formulario.
+
+    Args:
+        page: la página de Flet.
+    """
     page.go("/")
 
 
 def screen_signin(page: ft.Page):
+    """Dibuja la pantalla de inicio de sesión sobre `page`.
+
+    Además de montar el formulario, configura la tipografía (fuente
+    Nunito descargada de Google Fonts) y el color de fondo de la página.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+
+    Nota: la fuente se descarga de internet. Sin conexión, Flet usa la
+    tipografía por defecto y la pantalla se ve igual de funcional.
+    """
     page.title = "SignScan - Log in"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
@@ -93,7 +119,8 @@ def screen_signin(page: ft.Page):
     )
 
     # ================================================================
-    # RIGHT PANEL — Form (same card/input/button style as sign_up.py)
+    # PANEL DERECHO — Formulario (misma tarjeta, campos y botones que
+    # sign_up.py, para que las dos pantallas se sientan iguales)
     # ================================================================
     input_style = {
         "width": 420,
@@ -131,6 +158,18 @@ def screen_signin(page: ft.Page):
     )
 
     def handle_login(e):
+        """Valida las credenciales y entra a la app.
+
+        Primero esconde el error anterior (para que no quede un mensaje
+        viejo si el usuario reintenta), consulta la base de datos y:
+            - si falla, muestra el mensaje que devuelve la consulta y se
+              queda en la pantalla;
+            - si acierta, guarda al usuario en la sesión y navega al
+              dashboard.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         error_text.visible = False
         error_text.update()
 
@@ -145,6 +184,20 @@ def screen_signin(page: ft.Page):
         page.go("/dashboard")
 
     def social_slot(content_text: str, text_size: int):
+        """Construye uno de los botones cuadrados de redes sociales.
+
+        Son decorativos: no tienen on_click, solo el marco con la letra
+        o el emoji dentro.
+
+        Args:
+            content_text: texto o emoji a mostrar ("G", la manzana...).
+            text_size: tamaño de fuente, para que los tres se vean
+                ópticamente del mismo tamaño pese a ser símbolos
+                distintos.
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         return ft.Container(
             width=65,
             height=65,
@@ -179,6 +232,11 @@ def screen_signin(page: ft.Page):
     )
 
     def go_to_signup(e):
+        """Lleva a la pantalla de crear cuenta.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         page.go("/create-account")
 
     form = ft.Column(
@@ -263,8 +321,17 @@ def screen_signin(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
-        # Make the window occupy the full computer screen, matching the
-        # rest of the app's screens.
+        """Arranque suelto de esta pantalla, para trabajar su diseño.
+
+        Ejecutar `python screens/sign_in.py` abre solo el login, con la
+        ventana maximizada como en el resto de la app. Ojo: al no pasar
+        por main.py no hay enrutador, así que los botones que navegan a
+        otras pantallas no harán nada.
+
+        Args:
+            page: la página que crea Flet.
+        """
+        # Ventana maximizada, igual que el resto de pantallas de la app.
         page.window.maximized = True
         page.window.min_width = 1000
         page.window.min_height = 700
