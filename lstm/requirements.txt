@@ -1,0 +1,36 @@
+# =====================================================================
+# Dependencias del MÓDULO DINÁMICO (carpeta lstm/)
+#
+# Es el módulo de captura y entrenamiento del modelo de señas con
+# movimiento: capturar_lstm.py, train_lstm.py, predict_lstm.py y los
+# scripts de preparación del dataset.
+#
+# Instalación, desde esta carpeta:
+#     python -m venv venv
+#     venv\Scripts\activate          (Windows)
+#     pip install -r requirements.txt
+#
+# La aplicación (carpeta main/) tiene su propio requirements.txt: no
+# necesita scikit-learn, y sí necesita flet.
+# =====================================================================
+
+# Entrenamiento y ejecución de la red BiLSTM.
+tensorflow>=2.16.0
+
+# Captura por webcam y visualización durante la grabación de muestras.
+opencv-python>=4.9.0
+
+# Detección de manos (Hand Landmarker, Tasks API).
+# Requiere el archivo hand_landmarker.task en esta carpeta; NO está en
+# el repositorio y se descarga una sola vez:
+#   python -c "import urllib.request; urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', 'hand_landmarker.task')"
+mediapipe>=0.10.14
+
+# Manejo de las secuencias y de los archivos .npy del dataset.
+numpy>=1.26.0
+
+# Separación entrenamiento/validación y métricas de evaluación.
+scikit-learn>=1.4.0
+
+# Lectura y escritura del modelo entrenado (.keras).
+h5py>=3.10.0

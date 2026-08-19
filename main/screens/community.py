@@ -1,8 +1,32 @@
 """
-Community screen (screens/community.py).
+Pantalla de comunidad — screens/community.py
 
-Navigation sidebar (same as dashboard.py) + a post composer + a feed
-of community posts with likes and replies (now actually functional).
+Ruta "/community". Un muro donde el usuario escribe publicaciones y
+puede dar "me gusta" y responder a las de los demás.
+
+Estructura: la misma que el dashboard.
+    - Menú lateral fijo (260 px), idéntico al de dashboard.py pero con
+      "Community" marcado como sección activa.
+    - Contenido: banner dorado, caja para escribir y el muro de
+      publicaciones.
+
+Lo que SÍ funciona: publicar, dar y quitar "me gusta", desplegar el
+cuadro de respuesta, responder, el contador de caracteres y el botón de
+publicar que se activa solo cuando hay texto.
+
+Lo que hay que tener claro antes de enseñarlo: **nada de esto se
+guarda**. No existe tabla de publicaciones en la base de datos, así que
+todo vive en memoria y desaparece al cambiar de pantalla o cerrar la
+app. Las tres publicaciones de Maria, Carlos y Ana están escritas a
+mano al final del archivo (`seed_posts`) para que el muro no se vea
+vacío. Tampoco hay usuarios de verdad detrás: solo el que tiene la
+sesión iniciada.
+
+Cómo se distingue quién publica: las funciones que construyen tarjetas
+reciben `use_session_avatar`. Si es True, el avatar sale de
+session.get_avatar_control() (o sea, la foto o el emoji del usuario
+logueado); si es False, se pinta el emoji fijo que se le pase, que es
+lo que se usa para las publicaciones de ejemplo.
 """
 
 import os
@@ -16,7 +40,7 @@ if PROJECT_ROOT not in sys.path:
 
 import session  # noqa: E402
 
-# ---- Colors ----
+# ---- Colores ----
 COLOR_SIDEBAR = "#002060"
 COLOR_SIDEBAR_DARKER = "#001845"
 COLOR_BG_MAIN = "#EEF2F7"
@@ -38,6 +62,14 @@ MAX_REPLY_LENGTH = 200
 
 
 def screen_community(page: ft.Page):
+    """Dibuja la pantalla de comunidad completa sobre `page`.
+
+    Monta el menú lateral, la caja de publicar y el muro, y lo rellena
+    con las publicaciones de ejemplo.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+    """
     page.title = "SignScan - Community"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
@@ -50,9 +82,21 @@ def screen_community(page: ft.Page):
     user_email = session.current_user.get("email") or ""
 
     # ================================================================
-    # SIDEBAR (same structure as dashboard.py)
+    # MENÚ LATERAL (misma estructura que dashboard.py)
     # ================================================================
     def nav_button(icon_name: str, label: str, active: bool = False, route: str | None = None):
+        """Construye un botón del menú lateral.
+
+        Args:
+            icon_name: icono de Flet (ft.Icons.ALGO).
+            label: texto del botón.
+            active: True para pintarlo como la sección actual. Aquí lo
+                lleva "Community".
+            route: ruta a la que navega. Si es None, queda decorativo.
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         return ft.Container(
             content=ft.Row(
                 controls=[
@@ -141,6 +185,11 @@ def screen_community(page: ft.Page):
     nav_container = ft.Container(content=nav_column, padding=ft.Padding.symmetric(horizontal=15, vertical=20))
 
     def handle_logout(e):
+        """Cierra la sesión y vuelve a la pantalla de bienvenida.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         session.clear_current_user()
         page.go("/")
 
@@ -200,7 +249,7 @@ def screen_community(page: ft.Page):
     )
 
     # ================================================================
-    # Gold banner
+    # Banner dorado de la parte de arriba
     # ================================================================
     gold_banner = ft.Container(
         content=ft.Column(
@@ -225,7 +274,7 @@ def screen_community(page: ft.Page):
     )
 
     # ================================================================
-    # Post composer
+    # Caja para escribir una publicación
     # ================================================================
     post_input = ft.TextField(
         hint_text="What are you learning today?",
@@ -264,6 +313,15 @@ def screen_community(page: ft.Page):
     feed_column = ft.Column(spacing=15)
 
     def handle_input_change(e):
+        """Actualiza el contador y activa o desactiva el botón Post.
+
+        Se dispara con cada tecla. El botón solo se habilita si hay
+        texto y no se pasa del límite de caracteres; cuando está
+        deshabilitado se pinta translúcido para que se note.
+
+        Args:
+            e: evento de cambio de Flet. No se usa.
+        """
         length = len(post_input.value or "")
         char_counter.value = f"{length}/{MAX_POST_LENGTH}"
         char_counter.update()
@@ -275,11 +333,23 @@ def screen_community(page: ft.Page):
     post_input.on_change = handle_input_change
 
     def handle_post_click(e):
+        """Publica lo escrito: lo mete arriba del muro y limpia la caja.
+
+        La publicación se inserta en la posición 0 para que salga la
+        primera, con la etiqueta de tiempo "now".
+
+        Recordatorio: esto NO se guarda en ningún sitio. Al salir de la
+        pantalla, la publicación desaparece.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         text = (post_input.value or "").strip()
         if not text:
             return
-        # use_session_avatar=True: this post is from the logged-in
-        # user, so it should show their photo if they've set one.
+        # use_session_avatar=True: esta publicación es del usuario que
+        # tiene la sesión abierta, así que debe salir su foto si puso
+        # alguna.
         new_post = build_post_card(None, user_name, "now", text, likes=0, replies=[],
                                     use_session_avatar=True)
         feed_column.controls.insert(0, new_post)
@@ -333,9 +403,24 @@ def screen_community(page: ft.Page):
     )
 
     # ================================================================
-    # Feed post cards
+    # Tarjetas del muro
     # ================================================================
     def _circle_avatar(avatar_emoji, use_session_avatar, size, bgcolor):
+        """Construye un avatar redondo, de foto o de emoji.
+
+        Args:
+            avatar_emoji: emoji a usar cuando la publicación no es del
+                usuario logueado.
+            use_session_avatar: True para usar la foto o el emoji del
+                usuario que tiene la sesión iniciada.
+            size: diámetro del círculo en píxeles.
+            bgcolor: color de fondo, que se ve cuando el contenido es
+                un emoji.
+
+        Returns:
+            El contenedor de Flet, con el recorte activado para que una
+            foto salga redonda y no cuadrada.
+        """
         content = (
             session.get_avatar_control(size=size * 0.65, container_size=size)
             if use_session_avatar
@@ -352,6 +437,20 @@ def screen_community(page: ft.Page):
         )
 
     def build_reply(avatar: str, name: str, text: str, use_session_avatar: bool = False):
+        """Construye una respuesta dentro de una publicación.
+
+        Se distingue visualmente por la línea turquesa de la izquierda y
+        por ser más pequeña que la publicación que la contiene.
+
+        Args:
+            avatar: emoji de quien responde.
+            name: nombre de quien responde.
+            text: contenido de la respuesta.
+            use_session_avatar: True si responde el usuario logueado.
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         return ft.Container(
             content=ft.Row(
                 controls=[
@@ -377,12 +476,45 @@ def screen_community(page: ft.Page):
 
     def build_post_card(avatar: str, name: str, time_label: str, text: str, likes: int, replies: list,
                          use_session_avatar: bool = False):
-        # ---- Like: filled red heart when liked, outlined gray otherwise ----
+        """Construye una tarjeta de publicación entera y funcional.
+
+        Cada tarjeta se lleva su propio estado (si está marcada con "me
+        gusta", cuántos lleva, sus respuestas y si el cuadro de
+        responder está abierto). Por eso los manejadores se definen aquí
+        dentro: así cada publicación toca solo sus propios controles y
+        no los de las demás.
+
+        Args:
+            avatar: emoji de quien publica.
+            name: nombre de quien publica.
+            time_label: texto de tiempo ("2h", "now"...). Es una
+                etiqueta suelta, no una fecha de verdad.
+            text: contenido de la publicación.
+            likes: número inicial de "me gusta".
+            replies: lista de diccionarios con las respuestas iniciales,
+                cada uno con "avatar", "name" y "text".
+            use_session_avatar: True si publica el usuario logueado.
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
+        # ---- Me gusta: corazón rojo relleno si está marcado, gris con
+        # solo el contorno si no ----
         like_state = {"liked": False, "count": likes}
         like_icon = ft.Icon(ft.Icons.FAVORITE_BORDER_ROUNDED, size=14, color=COLOR_LIGHT_GRAY_TEXT)
         like_count_text = ft.Text(str(likes), size=15, weight=ft.FontWeight.BOLD, color=COLOR_LIGHT_GRAY_TEXT)
 
         def toggle_like(e):
+            """Marca o desmarca el "me gusta" de ESTA publicación.
+
+            Cambia el icono, el color y el contador de una vez. El
+            estado va en el diccionario like_state porque las funciones
+            anidadas no pueden reasignar variables del ámbito exterior
+            sin `nonlocal`.
+
+            Args:
+                e: evento de clic de Flet. No se usa.
+            """
             like_state["liked"] = not like_state["liked"]
             like_state["count"] += 1 if like_state["liked"] else -1
             like_count_text.value = str(like_state["count"])
@@ -403,7 +535,8 @@ def screen_community(page: ft.Page):
             ink=True,
         )
 
-        # ---- Replies: a live column plus a toggleable reply composer ----
+        # ---- Respuestas: una columna que crece en vivo, más el cuadro
+        # de responder que se muestra y se oculta ----
         reply_controls = [
             build_reply(r["avatar"], r["name"], r["text"], r.get("use_session_avatar", False))
             for r in replies
@@ -430,11 +563,20 @@ def screen_community(page: ft.Page):
         )
 
         def send_reply(e):
+            """Añade una respuesta a ESTA publicación.
+
+            La respuesta se pinta al final de la lista, se limpia el
+            campo y se actualiza el contador del botón. Igual que las
+            publicaciones, no se guarda en ningún sitio.
+
+            Args:
+                e: evento de clic de Flet. No se usa.
+            """
             reply_text = (reply_input.value or "").strip()
             if not reply_text:
                 return
-            # The reply is always from the logged-in user, so it should
-            # show their photo if they've set one.
+            # La respuesta siempre es del usuario que tiene la sesión
+            # abierta, así que debe salir su foto si puso alguna.
             replies_column.controls.append(build_reply(None, user_name, reply_text, use_session_avatar=True))
             replies_column.update()
             reply_input.value = ""
@@ -461,6 +603,11 @@ def screen_community(page: ft.Page):
         )
 
         def toggle_reply_composer(e):
+            """Muestra u oculta el cuadro para responder.
+
+            Args:
+                e: evento de clic de Flet. No se usa.
+            """
             reply_composer.visible = not reply_composer.visible
             reply_composer.update()
 
@@ -570,6 +717,15 @@ def screen_community(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
+        """Arranque suelto de esta pantalla, para trabajar su diseño.
+
+        Con `python screens/community.py` se abre solo la comunidad. Al
+        no haber sesión iniciada saldrá como "User", y los botones de
+        navegación no llevarán a ningún sitio.
+
+        Args:
+            page: la página que crea Flet.
+        """
         page.window.maximized = True
         page.window.min_width = 1100
         page.window.min_height = 700

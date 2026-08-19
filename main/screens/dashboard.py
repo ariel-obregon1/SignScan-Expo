@@ -1,9 +1,25 @@
 """
-Home / dashboard screen (screens/dashboard.py).
+Pantalla principal / dashboard — screens/dashboard.py
 
-Navigation sidebar + greeting + streak/progress cards + module grid.
-Shows the logged-in user's name/email/avatar (session.current_user)
-instead of placeholder data.
+Ruta "/dashboard". Es la pantalla a la que se llega después de iniciar
+sesión y el centro de navegación de la app.
+
+Estructura: dos zonas en una fila.
+    - Menú lateral fijo (260 px): logo, ficha del usuario, botones de
+      navegación y botón de cerrar sesión.
+    - Contenido principal: saludo con la racha, tres tarjetas de
+      estadísticas, el progreso por temas y la rejilla de módulos.
+
+Los datos del usuario (nombre, correo y avatar) salen de
+session.current_user, no de la base de datos: la sesión ya los tiene
+cargados desde el login.
+
+Aviso importante para quien siga esto: TODAS las cifras de progreso
+están escritas a mano (racha de 3 días, 0/259 señas, 0% en cada tema).
+Son maqueta; todavía no hay nada que las calcule ni tabla donde
+guardarlas. Los botones "Video Chat", "Learn Signs" y "Community" de la
+rejilla de módulos tampoco navegan a ningún sitio, a propósito: se les
+pasa route=None.
 """
 
 import os
@@ -17,7 +33,7 @@ if PROJECT_ROOT not in sys.path:
 
 import session  # noqa: E402
 
-# ---- Colors ----
+# ---- Colores ----
 COLOR_SIDEBAR = "#002060"
 COLOR_SIDEBAR_DARKER = "#001845"
 COLOR_BG_MAIN = "#EEF2F7"
@@ -36,8 +52,9 @@ COLOR_PROGRESS_TRACK = "#E5E7EB"
 
 SIDEBAR_WIDTH = 260
 
-# Subtle depth shared by the white cards on this screen, matching the
-# shadow style already used on the auth cards and community posts.
+# Sombra suave que comparten todas las tarjetas blancas de esta
+# pantalla. Es la misma que ya usan las tarjetas de login/alta y las
+# publicaciones de la comunidad, para que todo se vea del mismo juego.
 CARD_SHADOW = ft.BoxShadow(
     spread_radius=1, blur_radius=10,
     color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK),
@@ -46,6 +63,15 @@ CARD_SHADOW = ft.BoxShadow(
 
 
 def screen_dashboard(page: ft.Page):
+    """Dibuja el dashboard completo sobre `page`.
+
+    Lee de la sesión el nombre, el correo y el avatar del usuario. Si no
+    hay nadie con la sesión iniciada (por ejemplo al abrir esta pantalla
+    suelta), usa valores por defecto en vez de fallar.
+
+    Args:
+        page: la página de Flet sobre la que se dibuja.
+    """
     page.title = "SignScan - Home"
     page.bgcolor = ft.Colors.GREY_300
     page.padding = 0
@@ -58,9 +84,22 @@ def screen_dashboard(page: ft.Page):
     user_email = session.current_user.get("email") or ""
 
     # ================================================================
-    # SIDEBAR
+    # MENÚ LATERAL
     # ================================================================
     def nav_button(icon_name: str, label: str, active: bool = False, route: str | None = None):
+        """Construye un botón del menú lateral.
+
+        Args:
+            icon_name: icono de Flet (ft.Icons.ALGO).
+            label: texto del botón.
+            active: True para pintarlo como la sección actual (fondo
+                turquesa y texto azul). Solo "Home" lo lleva puesto.
+            route: ruta a la que navega al pulsarlo. Si es None, el
+                botón queda sin evento de clic, es decir, decorativo.
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         return ft.Container(
             content=ft.Row(
                 controls=[
@@ -149,15 +188,23 @@ def screen_dashboard(page: ft.Page):
     nav_container = ft.Container(content=nav_column, padding=ft.Padding.symmetric(horizontal=15, vertical=20))
 
     def handle_logout(e):
+        """Cierra la sesión y vuelve a la pantalla de bienvenida.
+
+        Borra los datos del usuario de la sesión en memoria; la cuenta
+        sigue existiendo en la base de datos.
+
+        Args:
+            e: evento de clic de Flet. No se usa.
+        """
         session.clear_current_user()
         page.go("/")
 
     logout_button = ft.Container(
         content=ft.Row(
             controls=[
-                # A slightly warm-tinted icon (instead of plain white)
-                # is a small, common affordance hinting this is a
-                # "leave/danger" action, without needing a full red button.
+                # Un icono con un tono cálido (en vez de blanco a
+                # secas) es una pista visual habitual de que esto es una
+                # acción de "salir", sin necesidad de un botón rojo.
                 ft.Icon(ft.Icons.LOGOUT_ROUNDED, size=18, color=COLOR_LOGOUT_ICON),
                 ft.Text("Log out", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
             ],
@@ -188,7 +235,7 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # MAIN CONTENT — Header (greeting + streak)
+    # CONTENIDO PRINCIPAL — Cabecera (saludo + racha)
     # ================================================================
     greeting_header = ft.Container(
         content=ft.Row(
@@ -228,6 +275,19 @@ def screen_dashboard(page: ft.Page):
     # Stat cards
     # ================================================================
     def stat_card(emoji: str, value: str, label: str, accent_color: str):
+        """Construye una de las tres tarjetas blancas de estadísticas.
+
+        Args:
+            emoji: icono de arriba, dentro de un círculo de color.
+            value: cifra o texto destacado del centro.
+            label: descripción pequeña de abajo.
+            accent_color: color del círculo del icono. Se aplica con
+                opacidad baja para que quede como un fondo suave.
+
+        Returns:
+            El contenedor de Flet ya montado, con expand=True para que
+            las tres se repartan el ancho por igual.
+        """
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -264,9 +324,25 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # Overall progress bar
+    # Barras de progreso
     # ================================================================
     def simple_progress_bar(percent: int, color: str, height: int = 8):
+        """Dibuja una barra de progreso a mano, sin ft.ProgressBar.
+
+        El truco: dos contenedores dentro de una fila, uno con
+        expand=porcentaje_lleno y otro con expand=porcentaje_vacío. Flet
+        reparte el ancho en esa proporción, así que se ve como una barra
+        que se llena, y de paso se puede redondear como se quiera.
+
+        Args:
+            percent: porcentaje completado, de 0 a 100.
+            color: color de la parte llena.
+            height: alto de la barra en píxeles.
+
+        Returns:
+            El contenedor de Flet ya montado. Con percent=0 devuelve
+            solo el carril gris de fondo.
+        """
         filled = max(percent, 0)
         empty = max(100 - filled, 0)
         bar_controls = []
@@ -323,13 +399,37 @@ def screen_dashboard(page: ft.Page):
     )
 
     def category_label(text: str):
-        # weight=BOLD gives these small uppercase "BASIC / INTERMEDIATE
-        # / ADVANCED" eyebrow labels the letter-spacing-like presence
-        # that section headers usually have, instead of reading as thin,
-        # easy-to-miss text.
+        """Devuelve el título pequeño de una categoría (BASIC, etc.).
+
+        Args:
+            text: texto de la etiqueta, normalmente con su emoji.
+
+        Returns:
+            El ft.Text ya formateado.
+        """
+        # El weight=BOLD le da a estas etiquetas pequeñas en mayúsculas
+        # ("BASIC / INTERMEDIATE / ADVANCED") la presencia que se espera
+        # de un encabezado de sección; sin él se leen como texto fino y
+        # pasan desapercibidas.
         return ft.Text(text, size=10.5, weight=ft.FontWeight.BOLD, color=COLOR_GRAY_TEXT)
 
     def topic_row(emoji: str, name: str, percent: int, percent_color: str):
+        """Construye una fila de tema con su barra de progreso.
+
+        Formato horizontal: emoji, nombre con la barra debajo y el
+        porcentaje a la derecha. Se usa en las categorías básica e
+        intermedia.
+
+        Args:
+            emoji: icono del tema.
+            name: nombre del tema (Alphabet, Greetings...).
+            percent: porcentaje completado, de 0 a 100.
+            percent_color: color de la barra y del porcentaje, que
+                cambia según la dificultad de la categoría.
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         return ft.Container(
             content=ft.Row(
                 controls=[
@@ -353,6 +453,21 @@ def screen_dashboard(page: ft.Page):
         )
 
     def topic_row_stacked(emoji: str, name: str, percent: int, percent_color: str):
+        """Igual que topic_row, pero en vertical y más estrecha.
+
+        Se usa en la categoría avanzada, donde tres temas van uno al
+        lado del otro en la misma fila y no cabe el formato horizontal.
+
+        Args:
+            emoji: icono del tema.
+            name: nombre del tema.
+            percent: porcentaje completado, de 0 a 100.
+            percent_color: color de la barra y del porcentaje.
+
+        Returns:
+            El contenedor de Flet ya montado, con expand=True para
+            repartirse el ancho con sus hermanos.
+        """
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -372,6 +487,16 @@ def screen_dashboard(page: ft.Page):
         )
 
     def category_card(label: str, content):
+        """Envuelve una categoría de temas en una tarjeta blanca.
+
+        Args:
+            label: título de la categoría, con su emoji.
+            content: el control con los temas de esa categoría (una
+                columna de filas, o una fila de tarjetas verticales).
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -432,9 +557,24 @@ def screen_dashboard(page: ft.Page):
     )
 
     # ================================================================
-    # Modules
+    # Módulos
     # ================================================================
     def module_card(emoji: str, title: str, subtitle: str, bgcolor, text_color, route: str | None = None):
+        """Construye una de las tarjetas grandes de módulo.
+
+        Args:
+            emoji: icono dentro del cuadrado translúcido.
+            title: título del módulo.
+            subtitle: descripción de una línea.
+            bgcolor: color de fondo de la tarjeta.
+            text_color: color del texto, que cambia según lo oscuro que
+                sea el fondo.
+            route: ruta a la que navega. Si es None, la tarjeta es
+                decorativa (hoy solo "Scan Signs" navega, a "/scan").
+
+        Returns:
+            El contenedor de Flet ya montado.
+        """
         body = ft.Column(
             controls=[
                 ft.Container(
@@ -535,6 +675,15 @@ def screen_dashboard(page: ft.Page):
 
 if __name__ == "__main__":
     def _standalone(page: ft.Page):
+        """Arranque suelto de esta pantalla, para trabajar su diseño.
+
+        Con `python screens/dashboard.py` se abre solo el dashboard. Al
+        no haber sesión iniciada saldrá como "User" y sin correo, y los
+        botones de navegación no llevarán a ningún sitio.
+
+        Args:
+            page: la página que crea Flet.
+        """
         page.window.maximized = True
         page.window.min_width = 1100
         page.window.min_height = 700
